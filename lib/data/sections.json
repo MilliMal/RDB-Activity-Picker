@@ -1,0 +1,23 @@
+[
+  { "id": "A", "title": "Agriculture, Forestry and Fishing", "divisions": ["01", "02", "03"] },
+  { "id": "B", "title": "Mining and Quarrying", "divisions": ["05", "06", "07", "08", "09"] },
+  { "id": "C", "title": "Manufacturing", "divisions": ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33"] },
+  { "id": "D", "title": "Electricity, Gas, Steam and Air Conditioning Supply", "divisions": ["35"] },
+  { "id": "E", "title": "Water Supply; Sewerage, Waste Management and Remediation Activities", "divisions": ["36", "37", "38", "39"] },
+  { "id": "F", "title": "Construction", "divisions": ["41", "42", "43"] },
+  { "id": "G", "title": "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles", "divisions": ["45", "46", "47"] },
+  { "id": "H", "title": "Transportation and Storage", "divisions": ["49", "50", "51", "52", "53"] },
+  { "id": "I", "title": "Accommodation and Food Service Activities", "divisions": ["55", "56"] },
+  { "id": "J", "title": "Information and Communication", "divisions": ["58", "59", "60", "61", "62", "63"] },
+  { "id": "K", "title": "Financial and Insurance Activities", "divisions": ["64", "65", "66"] },
+  { "id": "L", "title": "Real Estate Activities", "divisions": ["68"] },
+  { "id": "M", "title": "Professional, Scientific and Technical Activities", "divisions": ["69", "70", "71", "72", "73", "74", "75"] },
+  { "id": "N", "title": "Administrative and Support Service Activities", "divisions": ["77", "78", "79", "80", "81", "82"] },
+  { "id": "O", "title": "Public Administration and Defence; Compulsory Social Security", "divisions": ["84"] },
+  { "id": "P", "title": "Education", "divisions": ["85"] },
+  { "id": "Q", "title": "Human Health and Social Work Activities", "divisions": ["86", "87", "88"] },
+  { "id": "R", "title": "Arts, Entertainment and Recreation", "divisions": ["90", "91", "92", "93"] },
+  { "id": "S", "title": "Other Service Activities", "divisions": ["94", "95", "96"] },
+  { "id": "T", "title": "Activities of Households as Employers", "divisions": ["97", "98"] },
+  { "id": "U", "title": "Activities of Extraterritorial Organisations and Bodies", "divisions": ["99"] }
+]
