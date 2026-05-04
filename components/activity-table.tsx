@@ -447,7 +447,7 @@ export function ActivityTable({
               >
                 List of codes and Activities
               </span>
-              <span className="text-xs whitespace-nowrap text-[#555555]">
+              <span className="text-xs text-[#555555] [overflow-wrap:anywhere]">
                 {totalVisible.toLocaleString()} activities across{" "}
                 {sections.length} sectors
               </span>
@@ -762,7 +762,7 @@ function ActivityRow({
               </span>
               <span
                 className={cn(
-                  "truncate text-[12px] leading-4",
+                  "min-w-0 text-[12px] leading-4 [overflow-wrap:anywhere]",
                   isHighlighted ? "text-[#ACEAB1]" : "text-[#888888]"
                 )}
                 title={sectionTitle}
@@ -785,7 +785,7 @@ function ActivityRow({
           <span className="shrink-0 text-[#555555]">Division</span>
           <span
             className={cn(
-              "min-w-0 truncate",
+              "min-w-0 [overflow-wrap:anywhere]",
               isHighlighted ? "text-[#ACEAB1]" : "text-[#A3A3A3]"
             )}
             title={row.original.division}

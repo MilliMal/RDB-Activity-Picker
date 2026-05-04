@@ -277,7 +277,7 @@ export const ReasoningContent = memo(function ReasoningContent({
           )}
           {...props}
         >
-          <Streamdown className="thinking-content-markdown [&_*]:text-[#808080]">
+          <Streamdown className="thinking-content-markdown max-w-full [overflow-wrap:anywhere] [&_*]:text-[#808080] [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:[table-layout:auto] [&_th]:whitespace-normal [&_td]:whitespace-normal [&_th]:align-top [&_td]:align-top [&_th]:[overflow-wrap:anywhere] [&_td]:[overflow-wrap:anywhere]">
             {children}
           </Streamdown>
         </motion.div>

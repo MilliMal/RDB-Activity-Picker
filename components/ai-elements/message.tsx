@@ -44,7 +44,7 @@ export const MessageResponse = memo(function MessageResponse({
   return (
     <Streamdown
       className={cn(
-        "size-full text-[13px] leading-[160%] text-[#EBEBEB] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "size-full max-w-full text-[13px] leading-[160%] text-[#EBEBEB] [overflow-wrap:anywhere] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:[table-layout:auto] [&_th]:whitespace-normal [&_td]:whitespace-normal [&_th]:align-top [&_td]:align-top [&_th]:[overflow-wrap:anywhere] [&_td]:[overflow-wrap:anywhere]",
         className
       )}
       {...props}
