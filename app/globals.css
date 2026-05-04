@@ -172,11 +172,15 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-black text-foreground;
-  }
   html {
     @apply font-sans;
     color-scheme: dark;
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    @apply bg-black text-foreground;
+    height: 100%;
+    overflow: hidden;
   }
 }

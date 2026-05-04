@@ -78,16 +78,13 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   ).filter((el) => !el.closest("[aria-hidden='true']"))
 }
 
-/** Min widths keep columns reachable when the table scrolls horizontally inside the modal. */
-const TABLE_SCROLL_MIN_WIDTH = "min-w-[680px]"
-
-const columnClassName = (id: string) =>
+/** Flex proportions — division gets the most space since it consistently has the longest text. */
+const colClass = (id: string) =>
   cn(
-    "shrink-0",
-    id === "code" && "w-28 min-w-[7rem] font-mono",
-    id === "section" && "w-32 min-w-[8rem]",
-    id === "division" && "w-60 min-w-[15rem]",
-    id === "activity" && "min-w-[12rem] flex-1"
+    id === "code" && "w-[4.5rem] shrink-0 font-mono",
+    id === "section" && "flex-[2] min-w-0",
+    id === "division" && "flex-[3] min-w-0",
+    id === "activity" && "flex-[2] min-w-0"
   )
 
 export function ActivityTable({
@@ -101,7 +98,10 @@ export function ActivityTable({
 }: ActivityTableProps) {
   const [search, setSearch] = useState("")
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => new Set(sections.map((s) => s.id))
+    () => new Set(highlightedCodes.length > 0
+      ? data.filter((c) => highlightedCodes.includes(c.code)).map((c) => c.section)
+      : []
+    )
   )
   const [filterSectionIds, setFilterSectionIds] = useState<string[]>([])
   const [sorting, setSorting] = useState<SortingState>([])
