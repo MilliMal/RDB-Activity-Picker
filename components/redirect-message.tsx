@@ -2,6 +2,7 @@
 
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface RedirectMessageProps {
   reason: string
@@ -28,42 +29,45 @@ export function RedirectMessage({
     <div className="flex w-full flex-col gap-2">
       <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
 
-      <div
-        className="flex w-full flex-col gap-3 rounded-[20px] p-4"
-        style={{ backgroundColor: "#151515" }}
-      >
-        <p className="text-[13px] leading-[160%]" style={{ color: "#EBEBEB" }}>
-          {reason
-            ? reason
-            : "That doesn't look like a business description. Try describing what your business sells or does."}
-        </p>
-
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[11px]" style={{ color: "#555555" }}>
-            Try one of these examples:
+      <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
+        <CardContent className="gap-3 p-4">
+          <p
+            className="text-[13px] leading-[160%] text-[#EBEBEB]"
+            role="status"
+            aria-live="polite"
+          >
+            {reason
+              ? reason
+              : "That doesn't look like a business description. Try describing what your business sells or does."}
           </p>
-          {EXAMPLE_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              disabled={examplesDisabled}
-              className="rounded-[12px] px-3 py-2.5 text-left text-[12px] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ backgroundColor: "#1C1C1C", color: "#888888" }}
-              onClick={() => onSelectExample(prompt)}
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
 
-        <Button
-          variant="ghost"
-          onClick={onRetry}
-          className="text-[#AAAAAA] hover:text-[#EBEBEB]"
-        >
-          Try again
-        </Button>
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[11px] text-[#555555]">
+              Try one of these examples:
+            </p>
+            {EXAMPLE_PROMPTS.map((prompt) => (
+              <Button
+                key={prompt}
+                type="button"
+                variant="ghost"
+                disabled={examplesDisabled}
+                className="h-auto justify-start rounded-[12px] bg-[#1C1C1C] px-3 py-2.5 text-left text-xs text-[#888888] hover:bg-[#252525] hover:text-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => onSelectExample(prompt)}
+              >
+                {prompt}
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={onRetry}
+            className="text-[#AAAAAA] hover:text-[#EBEBEB]"
+          >
+            Try again
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

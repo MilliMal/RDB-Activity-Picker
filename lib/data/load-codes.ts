@@ -1,10 +1,10 @@
 import { cache } from "react"
 import { readFileSync } from "fs"
 import path from "path"
-import type { ISICCode } from "@/lib/types"
+import type { ActivityCode } from "@/lib/types"
 
-export const loadCodes = cache((): ISICCode[] => {
-  const filePath = path.join(process.cwd(), "lib/data/isic-codes.json")
+export const loadCodes = cache((): ActivityCode[] => {
+  const filePath = path.join(process.cwd(), "lib/data/activities.json")
   const raw = readFileSync(filePath, "utf-8")
-  return JSON.parse(raw) as ISICCode[]
+  return JSON.parse(raw) as ActivityCode[]
 })

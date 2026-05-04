@@ -1,10 +1,9 @@
-export interface ISICCode {
+export interface ActivityCode {
   code: string
-  description: string
+  activity: string
   section: string
+  sector: string
   division: string
-  group: string
-  class: string
 }
 
 export interface Section {
@@ -69,7 +68,12 @@ export type FlowState =
   | { stage: "early-clarify"; question: string; options: ClarifyOption[] }
   | { stage: "matching-sections" }
   | { stage: "matching-codes" }
-  | { stage: "clarify"; question: string; options: ClarifyOption[]; round: number }
+  | {
+      stage: "clarify"
+      question: string
+      options: ClarifyOption[]
+      round: number
+    }
   | { stage: "matched"; codes: MatchedCode[] }
   | { stage: "redirect"; reason: string }
   | { stage: "fallback"; reason: "validation-error" | "max-rounds" }

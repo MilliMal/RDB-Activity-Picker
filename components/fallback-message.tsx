@@ -2,6 +2,7 @@
 
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface FallbackMessageProps {
   reason: "validation-error" | "max-rounds"
@@ -25,31 +26,34 @@ export function FallbackMessage({
     <div className="flex w-full flex-col gap-2">
       <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
 
-      <div
-        className="flex w-full flex-col gap-3 rounded-[20px] p-4"
-        style={{ backgroundColor: "#151515" }}
-      >
-        <p className="text-[13px] leading-[160%]" style={{ color: "#EBEBEB" }}>
-          {message}
-        </p>
+      <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
+        <CardContent className="gap-3 p-4">
+          <p
+            className="text-[13px] leading-[160%] text-[#EBEBEB]"
+            role="status"
+            aria-live="polite"
+          >
+            {message}
+          </p>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={onBrowseTable}
-            className="flex-1 bg-[#1C1C1C] text-[#EBEBEB] hover:bg-[#2A2A2A]"
-            style={{ border: "1px solid #2A2A2A" }}
-          >
-            Browse table
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={onRetry}
-            className="flex-1 text-[#AAAAAA] hover:text-[#EBEBEB]"
-          >
-            Try again
-          </Button>
-        </div>
-      </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={onBrowseTable}
+              variant="outline"
+              className="flex-1 border-[#2A2A2A] bg-[#1C1C1C] text-[#EBEBEB] hover:bg-[#2A2A2A] hover:text-[#EBEBEB]"
+            >
+              Browse table
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={onRetry}
+              className="flex-1 text-[#AAAAAA] hover:text-[#EBEBEB]"
+            >
+              Try again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

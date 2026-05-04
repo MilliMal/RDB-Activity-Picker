@@ -16,8 +16,11 @@ Includes: crop farming, animal rearing, fishing, aquaculture,
 forestry and logging.
 Rwanda signals: growing coffee, tea, pyrethrum, vegetables,
 fruits; raising goats, cows, chickens; fishing on Lake Kivu.
-Do NOT include A if they are selling produce they bought
-elsewhere — that is G (trade).
+Do NOT include A if they are clearly only selling produce they
+bought elsewhere — that is G (trade).
+If it is unclear whether the user grows or trades an agricultural
+product, include BOTH A and G — the code-matching step will
+resolve the ambiguity through clarification.
 
 ### B — Mining and Quarrying (14 codes)
 Extraction of minerals, stone, sand, clay from the ground.
@@ -166,11 +169,14 @@ Not relevant for private business registration.
 
 ## Decision rules
 
-1. If the business clearly fits one section, return only that one.
+1. Return every section that applies — one per distinct activity
+   the user described. Do not omit sections to keep the list short.
 2. If the business has two distinct activities (e.g. manufacturing
    AND selling), return both relevant sections.
-3. Maximum 3 sections. If you are considering more, you have not
-   understood the business well enough — clarify instead.
+3. When the input mentions selling an agricultural product (crops,
+   vegetables, fruit, livestock products, fish) and it is not
+   clear whether the user grows/raises it or buys it to resell,
+   return BOTH A and G. Do not guess — the next step will clarify.
 4. Never return O, T, or U for a private business.
 5. Section C has 1,062 codes. Only include it when the user is
    clearly making or transforming something physical.

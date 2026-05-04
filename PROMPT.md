@@ -14,7 +14,7 @@ lib/
 ├── constants.ts                ← Module 1: shared constants
 ├── data/
 │   ├── sections.json           ← static (21 ISIC sections)
-│   ├── isic-codes.json         ← static (2,075 codes)
+│   ├── activities.json         ← static (2,075 codes)
 │   ├── load-sections.ts        ← Module 2: data loaders (cached)
 │   ├── load-codes.ts           ← Module 2 (cached)
 │   └── filter-codes.ts         ← Module 2: pure filter
@@ -64,13 +64,12 @@ components/
 ### `lib/types.ts`
 
 ```
-ISICCode {
-  code: string          // "01110"
-  description: string
+ActivityCode {
+  code: string          // "11101"
+  activity: string      // "Growing of Cereals"
   section: string       // "A"
-  division: string      // "01"
-  group: string         // "011"
-  class: string         // "0111"
+  sector: string        // "Agriculture, Forestry and Fishing"
+  division: string      // "Crop and Animal Production..."
 }
 
 Section {
@@ -168,10 +167,10 @@ loadSections: cache((): Section[] => {
 ```
 import { cache } from 'react'
 
-loadCodes: cache((): ISICCode[] => {
-  // Read isic-codes.json synchronously.
-  // Same cache() wrapping — critical since this is 2,075 entries
-  // and gets called by both the API routes and the table.
+loadCodes: cache((): ActivityCode[] => {
+  // Read activities.json synchronously.
+  // cache() wrapping is critical — 2,075 entries called by both
+  // API routes and the table.
 })
 ```
 
@@ -180,8 +179,8 @@ loadCodes: cache((): ISICCode[] => {
 ```
 filterCodesBySections(
   sectionIds: string[],
-  allCodes: ISICCode[]
-): ISICCode[]
+  allCodes: ActivityCode[]
+): ActivityCode[]
 
 Pure filter. No cache needed — it's just an array operation.
 
@@ -774,7 +773,7 @@ Renders:
 
 ```
 Props:
-  data: ISICCode[]              // full 2,075 rows — always loaded
+  data: ActivityCode[]              // full 2,075 rows — always loaded
   highlightedCodes: string[]    // from matched codes only
 
 Renders:
@@ -908,8 +907,8 @@ Render map:
 Phase 1 — no dependencies, build in parallel:
   ├── Module 1: types.ts, constants.ts
   ├── Module 5: analytics.ts (only needs PickerEvent type)
-  ├── Data files: sections.json, isic-codes.json (verify structure)
-  └── Module 9 (partial): activity-table.tsx (only needs ISICCode type)
+  ├── Data files: sections.json, activities.json (verify structure)
+  └── Module 9 (partial): activity-table.tsx (only needs ActivityCode type)
 
 Phase 2 — depends on Module 1:
   ├── Module 2: cached data loaders + filter function

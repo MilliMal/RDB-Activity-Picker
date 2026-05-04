@@ -2,7 +2,7 @@ import { z } from "zod"
 import type { Step1Result } from "@/lib/types"
 
 export const step1Schema = z.object({
-  sections: z.array(z.string()).min(1).max(5),
+  sections: z.array(z.string()).min(1),
 })
 
 type Step1SchemaOutput = z.infer<typeof step1Schema>

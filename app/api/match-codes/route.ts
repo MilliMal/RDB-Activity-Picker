@@ -3,7 +3,9 @@ import { google } from "@ai-sdk/google"
 import { buildStep2Prompt } from "@/lib/prompts/step2"
 import { step2Schema } from "@/lib/schemas/step2"
 import { loadCodes } from "@/lib/data/load-codes"
+import { loadSections } from "@/lib/data/load-sections"
 import { filterCodesBySections } from "@/lib/data/filter-codes"
+import { resolveSectionIdsForMatching } from "@/lib/data/resolve-section-ids"
 import { logPickerEvent } from "@/lib/analytics"
 import { MODEL } from "@/lib/constants"
 
@@ -51,9 +53,14 @@ export async function POST(req: Request) {
 
     const input = typeof body.input === "string" ? body.input.trim() : ""
     logStartedAt = body.startedAt
-    const sectionIds = Array.isArray(body.sectionIds)
+    const allSectionIds = loadSections().map((s) => s.id)
+    const rawSectionIds = Array.isArray(body.sectionIds)
       ? body.sectionIds.filter((id): id is string => typeof id === "string")
       : []
+    const sectionIds = resolveSectionIdsForMatching(
+      rawSectionIds,
+      allSectionIds
+    )
     const clarifyHistory = parseClarifyHistory(body.clarifyHistory)
     const round =
       typeof body.round === "number" && Number.isFinite(body.round)
@@ -93,7 +100,7 @@ export async function POST(req: Request) {
           logPickerEvent({
             event: "fallback-triggered",
             input,
-            result: { reason: "validation-error", round },
+            result: { reason: "validation-error", round, clarifyHistory },
             round,
             durationMs,
           })
@@ -104,7 +111,11 @@ export async function POST(req: Request) {
           logPickerEvent({
             event: "codes-matched",
             input,
-            result: { type: "match" as const, codes: object.codes },
+            result: {
+              type: "match" as const,
+              codes: object.codes,
+              clarifyHistory,
+            },
             round,
             durationMs,
           })
@@ -118,6 +129,7 @@ export async function POST(req: Request) {
             type: "clarify" as const,
             question: object.question,
             options: object.options,
+            clarifyHistory,
           },
           round,
           durationMs,
@@ -130,7 +142,11 @@ export async function POST(req: Request) {
     logPickerEvent({
       event: "fallback-triggered",
       input: logInput,
-      result: { reason: "validation-error", round: logRound },
+      result: {
+        reason: "validation-error",
+        round: logRound,
+        clarifyHistory: [],
+      },
       round: logRound,
       durationMs: durationMsSince(logStartedAt),
     })

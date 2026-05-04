@@ -41,8 +41,9 @@ answers. Then evaluate codes by asking:
    other businesses, look under "Wholesale Trade" instead.
 
 4. Are there multiple valid codes?
-   Return up to 5. Fewer is better. If you are confident in
-   1 or 2 codes, return only those. Do not pad to 5.
+   Return one code per distinct activity the user described.
+   If a single activity maps to one clear code, return only that.
+   Do not pad with loosely related codes.
 
 ---
 
@@ -99,14 +100,26 @@ One or two sentences maximum.
 "I do hair or I run a salon"
   → Other service activities in S — code 960201 or nearby
 
+"I am a tour guide" or "I guide tourists"
+  → code 799004 (Tourist Guides / Visitor Assistance), NOT 791101
+    791101 is for travel agencies that sell travel packages.
+    791201 is for tour operators that assemble package tours.
+    799004 is specifically for tourist guides.
+
+"I run a travel agency" or "I sell travel packages"
+  → code 791101 (Travel Agency Activities)
+
+"I organise tours" or "I run a tour operator"
+  → code 791201 (Tour Operator Activities)
+
 ---
 
 ## Precision matters more than coverage
 
-It is better to return 2 highly relevant codes than 5 codes where
-3 of them are approximate. The user will verify against the full
-table — your job is to surface the best candidates, not every
-possible match.
+Return exactly the codes that match. If the user described 3
+distinct activities, return 3 codes. If one activity has two
+equally valid codes, return both. Never pad with approximate
+matches, and never drop a valid match to keep the list short.
 
 If the filtered list does not contain a clearly correct code,
 this is the signal to ask a clarifying question (see clarify.md).

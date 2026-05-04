@@ -1,4 +1,4 @@
-import type { ISICCode } from "@/lib/types"
+import type { ActivityCode } from "@/lib/types"
 import { loadSkills } from "./base"
 
 interface ClarifyTurn {
@@ -10,13 +10,13 @@ interface ClarifyTurn {
 // Gemini receives: personality + code-match skill + clarify skill
 // + filtered code list + clarification history (if any).
 export function buildStep2Prompt(
-  filteredCodes: ISICCode[],
+  filteredCodes: ActivityCode[],
   clarifyHistory: ClarifyTurn[]
 ): string {
   const codeList = filteredCodes
     .map(
       (c) =>
-        `  [${c.code}] ${c.description} (section ${c.section}, division ${c.division})`
+        `  [${c.code}] ${c.activity} (division: ${c.division}; sector: ${c.sector}; section: ${c.section})`
     )
     .join("\n")
 
@@ -66,7 +66,9 @@ Shape 1 — when you can confidently match:
       }
     ]
   }
-  Return 1 to 5 codes. Fewer is better. Do not pad.
+  Return one code per distinct activity. Do not pad —
+  only include a code if it clearly matches something the
+  user described.
 
 Shape 2 — when you need more information:
   {

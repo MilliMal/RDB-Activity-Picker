@@ -1,7 +1,7 @@
 import { z } from "zod"
 import type { Step2Result } from "@/lib/types"
 
-export const step2Schema = z.discriminatedUnion("type", [
+export const step2Schema = z.union([
   z.object({
     type: z.literal("match"),
     codes: z
@@ -12,8 +12,7 @@ export const step2Schema = z.discriminatedUnion("type", [
           reason: z.string(),
         })
       )
-      .min(1)
-      .max(5),
+      .min(1),
   }),
   z.object({
     type: z.literal("clarify"),
