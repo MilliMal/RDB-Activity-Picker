@@ -16,6 +16,8 @@ interface ClarifyCardProps {
   round: number
   maxRounds: number
   startedAt: number | null
+  /** When false, the question is only used for a11y — show it in the scroll feed from the parent */
+  showQuestionInCard?: boolean
 }
 
 export function ClarifyCard({
@@ -26,6 +28,7 @@ export function ClarifyCard({
   round,
   maxRounds,
   startedAt,
+  showQuestionInCard = true,
 }: ClarifyCardProps) {
   const [showCustom, setShowCustom] = useState(false)
   const [customText, setCustomText] = useState("")
@@ -33,9 +36,16 @@ export function ClarifyCard({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
+      <Card
+        className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none"
+        aria-label={!showQuestionInCard ? question : undefined}
+      >
         <CardContent className="gap-2 p-4">
-          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+          <ThinkingIndicator
+            isStreaming={false}
+            startedAt={startedAt}
+            phase="clarify"
+          />
 
           {round > 1 && (
             <p className="text-[11px] text-[#555555]">
@@ -43,13 +53,15 @@ export function ClarifyCard({
             </p>
           )}
 
-          <p
-            className="text-[13px] leading-[160%] text-[#EBEBEB]"
-            role="status"
-            aria-live="polite"
-          >
-            {question}
-          </p>
+          {showQuestionInCard && (
+            <p
+              className="text-[13px] leading-[160%] text-[#EBEBEB]"
+              role="status"
+              aria-live="polite"
+            >
+              {question}
+            </p>
+          )}
 
           <div className="mt-1 flex flex-col gap-1.5">
             {options.map((opt) => (

@@ -19,6 +19,40 @@ service inside the main business.
 
 ---
 
+## Registration framing and industry coherence
+
+RDB registration asks for a **primary economic activity** — one coherent
+industry story, not a list of every verb in the value chain.
+
+- **Anchor on the industry the user is really in.** A mining or quarrying
+  business extracts minerals, stone, or sand; it will sell what it
+  extracts — that selling is part of the **same** extraction business,
+  not a separate "retail" business. Prefer **B** for that operation.
+  Do **not** add G (trade) just because they sell the product: include G
+  only if wholesale or retail of goods is clearly a **distinct** main
+  line (e.g. they mainly trade minerals they did not extract).
+
+- **Retail** businesses buy and sell goods as their core — anchor on **G**
+  when that is what they do. Do not drift them into mining or agriculture
+  because of what they sell.
+
+- **Farming** (growing, raising, harvesting) naturally includes selling
+  the harvest. Anchor on **A** when they produce the goods. Do **not**
+  add G only because they sell tomatoes or milk at market — that is still
+  the farming operation unless they are clearly **only** traders who buy
+  in and resell (then G, not A).
+
+- **One coherent section set:** returning both B and G for "we mine and
+  sell the minerals" usually wrong-frames the business unless they
+  described **two** distinct operations (e.g. a quarry **and** a separate
+  shop that only resells others' products). Same idea for A vs G:
+  prefer **one** primary section when the description is a single
+  vertical chain; use two sections when the user describes genuinely
+  separate businesses or when grow-vs-trade is **unclear** (then A and G
+  as documented below).
+
+---
+
 ## Section guide
 
 ### A — Agriculture, Forestry and Fishing (114 codes)
@@ -190,10 +224,15 @@ Not relevant for private business registration.
 
 ## Decision rules
 
-1. Return every section that applies — one per distinct activity
-   the user described. Do not omit sections to keep the list short.
-2. If the business has two distinct activities (e.g. manufacturing
-   AND selling), return both relevant sections.
+1. Prefer the **minimum** number of sections that still reflects the
+   user's primary industry(ies). One section is normal for a single
+   coherent business. Add a second or third only for a **distinct**
+   additional line of business, or for documented ambiguity (e.g. A+G
+   when grow vs trade is unclear).
+2. If the business has two **truly separate** activities (e.g. they
+   clearly run both a factory and unrelated retail shops), return both
+   relevant sections. Do **not** treat "make then sell" or "mine then
+   sell" or "farm then sell" as two activities — that is one chain.
 3. Do not split a description into unrelated sections for activities
    that are only ancillary to the primary category. Example: a hotel
    that sells clothes or souvenirs to guests is still primarily I

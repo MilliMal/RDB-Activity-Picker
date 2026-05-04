@@ -26,8 +26,11 @@ Return a JSON object with:
   - sections: an array of section letters e.g. ["A"] or ["G", "H"]
 
 Rules:
-  - Return every section that applies. Do not omit a section
-    just because the list is getting long.
+  - Return the minimum sections needed for a coherent primary
+    industry (usually one). Add another section only for a clearly
+    separate line of business or when the section-match skill says
+    to include two for ambiguity (e.g. A and G when grow vs trade
+    is unclear).
   - Only include a section if you are confident it applies.
   - Never return O, T, or U for a private business.
   - If section C (Manufacturing) applies, be certain — it has

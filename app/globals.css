@@ -116,6 +116,44 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer utilities {
+  /** Subtle sweep while the model is working — works over any Streamdown markup */
+  @keyframes thinking-shimmer-sweep {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+
+  .thinking-content-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .thinking-content-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgb(255 255 255 / 0.09) 50%,
+      transparent 65%
+    );
+    width: 55%;
+    animation: thinking-shimmer-sweep 2.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .thinking-content-shimmer > .thinking-content-markdown {
+    position: relative;
+    z-index: 1;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

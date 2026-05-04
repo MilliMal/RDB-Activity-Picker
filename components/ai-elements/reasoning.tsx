@@ -130,18 +130,21 @@ export const ReasoningContent = memo(function ReasoningContent({
   children,
   ...props
 }: ReasoningContentProps) {
-  const { isOpen } = useReasoning()
+  const { isOpen, isStreaming } = useReasoning()
   if (!isOpen) return null
 
   return (
     <div
       className={cn(
-        "mt-3 max-h-50 overflow-y-auto rounded-[10px] border border-[#262626]/30 bg-[#0E0E0E]/40 px-3 py-2 text-[11px] leading-[160%] text-[#808080]",
+        "mt-2 max-h-50 overflow-y-auto text-[13px] leading-[160%] text-[#808080]",
+        isStreaming && "thinking-content-shimmer",
         className
       )}
       {...props}
     >
-      <Streamdown>{children}</Streamdown>
+      <Streamdown className="thinking-content-markdown [&_*]:text-[#808080]">
+        {children}
+      </Streamdown>
     </div>
   )
 })

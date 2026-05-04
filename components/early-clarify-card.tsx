@@ -1,11 +1,20 @@
 "use client"
 
-import { useId, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  type PromptInputMessage,
+} from "@/components/ai-elements/prompt-input"
 import { ThinkingIndicator } from "@/components/thinking-indicator"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+const EARLY_CLARIFY_INPUT_ID = "rdb-early-clarify-refinement"
 
 interface EarlyClarifyCardProps {
   reason: string
@@ -19,13 +28,27 @@ export function EarlyClarifyCard({
   startedAt,
 }: EarlyClarifyCardProps) {
   const [text, setText] = useState("")
-  const inputId = useId()
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  function submitRefinement(message: PromptInputMessage) {
+    const trimmed = message.text.trim()
+    if (!trimmed) return
+    onRefine(trimmed)
+  }
 
   return (
     <div className="flex w-full flex-col gap-2">
       <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
         <CardContent className="gap-3 p-4">
-          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+          <ThinkingIndicator
+            isStreaming={false}
+            startedAt={startedAt}
+            phase="early-clarify"
+          />
 
           <p
             className="text-[13px] leading-[160%] text-[#EBEBEB]"
@@ -35,35 +58,34 @@ export function EarlyClarifyCard({
             {reason}
           </p>
 
-          <label htmlFor={inputId} className="sr-only">
+          <label htmlFor={EARLY_CLARIFY_INPUT_ID} className="sr-only">
             Refined business description
           </label>
-          <div className="flex w-full items-center gap-2 rounded-[12px] bg-[#1C1C1C] px-3 py-3">
-            <Input
-              id={inputId}
-              name="early-clarify-refinement"
-              autoComplete="off"
-              autoFocus
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && text.trim()) {
-                  onRefine(text.trim())
-                }
-              }}
-              placeholder="Describe your business in more detail..."
-              className="h-auto flex-1 border-0 bg-transparent p-0 text-[13px] text-[#EBEBEB] shadow-none outline-none placeholder:text-[#505050] focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-0"
-            />
-            <Button
-              type="button"
-              size="xs"
-              onClick={() => text.trim() && onRefine(text.trim())}
-              disabled={!text.trim()}
-              className="shrink-0 bg-[#2A2A2A] text-[#EBEBEB] hover:bg-[#3A3A3A]"
-            >
-              Submit
-            </Button>
-          </div>
+          <PromptInput
+            onSubmit={(msg) => submitRefinement(msg)}
+            className="rounded-[14px]"
+          >
+            <PromptInputBody>
+              <PromptInputTextarea
+                ref={inputRef}
+                id={EARLY_CLARIFY_INPUT_ID}
+                autoComplete="off"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Describe your business in more detail..."
+                className="min-h-[34px] max-h-28 px-2.5 py-2 text-[12px] leading-[150%]"
+              />
+            </PromptInputBody>
+            <PromptInputFooter className="px-2 pb-2 pt-1">
+              <PromptInputSubmit
+                disabled={!text.trim()}
+                className={cn(
+                  "size-6 shrink-0 rounded-[8px] [&_svg]:size-3.5",
+                  !text.trim() ? "opacity-50" : "opacity-100"
+                )}
+              />
+            </PromptInputFooter>
+          </PromptInput>
         </CardContent>
       </Card>
     </div>

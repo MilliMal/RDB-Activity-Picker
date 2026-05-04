@@ -32,6 +32,25 @@ export interface ClarifyOption {
   value: string
 }
 
+/** Completed pipeline step shown inline after the user message or clarify answer */
+export type ThinkingPipelinePhase =
+  | "stream-intent"
+  | "stream-sections"
+  | "stream-codes"
+  /** Single archived block for intent → sections → codes on first submission */
+  | "stream-initial-pipeline"
+
+export interface ThinkingSegment {
+  phase: ThinkingPipelinePhase
+  startedAt: number
+  completedAt: number
+}
+
+/** Where live (streaming) thinking should appear in the transcript */
+export type LiveThinkingPlacement =
+  | { placement: "initial" }
+  | { placement: "clarify"; answerIndex: number }
+
 export interface Step2MatchResult {
   type: "match"
   /** Plain-language synthesis of the business before codes were chosen */

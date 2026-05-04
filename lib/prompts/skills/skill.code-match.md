@@ -42,6 +42,18 @@ In order:
    or mixed retail if the list offers it), not one narrow code per
    item.
 
+5. **Industry coherence (registration framing)** — Companies register
+   one primary economic story, not "digging and selling" as two labels.
+   Match codes whose **section, sector, and division** belong to the
+   user's **primary industry**: mining/quarrying vs retail trade vs
+   agriculture vs manufacturing, etc. Someone who mines and sells their
+   extracted minerals should get **mining/quarrying** codes, not retail,
+   unless they are clearly traders who do not extract. Someone who farms
+   and sells their own produce should get **agricultural production**
+   codes, not wholesale/retail of purchased goods, unless they only buy
+   and resell. Do not attach a trade code for every step in a vertical
+   chain when one production/extraction code captures the business.
+
 Only after this step should you map to specific codes. Your JSON
 must include the businessUnderstanding field (required in the match
 shape from the server prompt) so this synthesis is explicit.
@@ -81,7 +93,8 @@ answers. Then evaluate codes by asking:
    matches from another category.
 
 2. Does the activity name match what this business DOES?
-   Not what it sells — what it DOES as an operation.
+   Not what it sells — what it DOES as an operation **as its primary
+   industry** (extract, manufacture, grow, transport, retail, etc.).
 
 3. Is this a main activity or only an ancillary detail?
    Do not return a separate code for something sold or offered inside

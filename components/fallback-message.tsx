@@ -26,7 +26,11 @@ export function FallbackMessage({
     <div className="flex w-full flex-col gap-2">
       <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
         <CardContent className="gap-3 p-4">
-          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+          <ThinkingIndicator
+            isStreaming={false}
+            startedAt={startedAt}
+            phase="fallback"
+          />
 
           <p
             className="text-[13px] leading-[160%] text-[#EBEBEB]"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   PromptInput,
   PromptInputBody,
@@ -10,6 +10,10 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input"
 import { cn } from "@/lib/utils"
+
+/** Stable ids avoid hydration mismatches: parent trees (e.g. theme) can shift React useId() counters between SSR and client. */
+const ACTIVITY_INPUT_ID = "rdb-activity-description"
+const ACTIVITY_HINT_ID = "rdb-activity-input-hint"
 
 interface ActivityInputProps {
   onSubmit: (input: string) => { hint: string | null } | void
@@ -29,8 +33,6 @@ export function ActivityInput({
   const [value, setValue] = useState(defaultValue)
   const [localHint, setLocalHint] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const inputId = useId()
-  const hintId = useId()
 
   useEffect(() => {
     if (defaultValue) {
@@ -51,20 +53,20 @@ export function ActivityInput({
   return (
     <div className="flex w-full flex-col gap-3.75">
       <div className="flex w-full flex-col items-center gap-1.5">
-        <label htmlFor={inputId} className="sr-only">
+        <label htmlFor={ACTIVITY_INPUT_ID} className="sr-only">
           Describe your business
         </label>
         <PromptInput
           onSubmit={handleSubmit}
           aria-invalid={displayHint ? true : undefined}
-          aria-describedby={displayHint ? hintId : undefined}
+          aria-describedby={displayHint ? ACTIVITY_HINT_ID : undefined}
           data-disabled={disabled ? true : undefined}
           className="rounded-[18px]"
         >
           <PromptInputBody>
             <PromptInputTextarea
               ref={inputRef}
-              id={inputId}
+              id={ACTIVITY_INPUT_ID}
               autoComplete="off"
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -83,7 +85,7 @@ export function ActivityInput({
           </PromptInputFooter>
         </PromptInput>
         {displayHint && (
-          <p id={hintId} className="text-center text-xs text-[#FF6B6B]">
+          <p id={ACTIVITY_HINT_ID} className="text-center text-xs text-[#FF6B6B]">
             {displayHint}
           </p>
         )}
