@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  Fragment,
   useId,
   useLayoutEffect,
   useMemo,
@@ -35,6 +36,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { easeOutStrong, transitionUi } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import type { ActivityCode, Section } from "@/lib/types"
@@ -219,10 +228,14 @@ export function ActivityTable({
     [sectionIdToTitle]
   )
 
+  const filterSectionIdSet = useMemo(() => {
+    return new Set(filterSectionIds)
+  }, [filterSectionIds])
+
   const filteredData = useMemo(() => {
     let d = data
-    if (filterSectionIds.length > 0) {
-      d = d.filter((c) => filterSectionIds.includes(c.section))
+    if (filterSectionIdSet.size > 0) {
+      d = d.filter((c) => filterSectionIdSet.has(c.section))
     }
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -235,7 +248,7 @@ export function ActivityTable({
       )
     }
     return d
-  }, [data, filterSectionIds, search])
+  }, [data, filterSectionIdSet, search])
 
   // TanStack Table returns row-model functions that React Compiler cannot safely memoize.
   // eslint-disable-next-line react-hooks/incompatible-library -- known TanStack Table + compiler interaction
@@ -249,16 +262,29 @@ export function ActivityTable({
     getSortedRowModel: getSortedRowModel(),
   })
 
+  const sectionTotals = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const c of data) {
+      totals.set(c.section, (totals.get(c.section) ?? 0) + 1)
+    }
+    return totals
+  }, [data])
+
   const sectionGroups = useMemo(() => {
+    const rowsBySection = new Map<string, Row<ActivityCode>[]>()
+    for (const r of table.getRowModel().rows) {
+      const key = r.original.section
+      const arr = rowsBySection.get(key)
+      if (arr) arr.push(r)
+      else rowsBySection.set(key, [r])
+    }
+
     return sections.map((section) => ({
       section,
-      rows: table
-        .getRowModel()
-        .rows.filter((r) => r.original.section === section.id),
-      totalInSection: data.filter((c) => c.section === section.id).length,
+      rows: rowsBySection.get(section.id) ?? [],
+      totalInSection: sectionTotals.get(section.id) ?? 0,
     }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sections, table, data, filteredData, sorting])
+  }, [sections, table, sectionTotals])
 
   const virtualItems = useMemo((): VirtualListItem[] => {
     const items: VirtualListItem[] = []
@@ -315,34 +341,54 @@ export function ActivityTable({
 
   const [stickySection, setStickySection] = useState<Section | null>(null)
 
-  useEffect(() => {
-    const el = scrollParentRef.current
-    if (!el || !open) return
-
-    const sectionHeaderIndices = virtualItems
+  const sectionHeaderIndices = useMemo(() => {
+    return virtualItems
       .map((item, i) => ({ item, i }))
       .filter((x): x is { item: VirtualListItem & { type: "section-header" }; i: number } =>
         x.item.type === "section-header"
       )
+  }, [virtualItems])
 
-    function update() {
-      const scrollTop = el!.scrollTop
+  useEffect(() => {
+    const el = scrollParentRef.current
+    if (!el || !open) return
+    const scrollEl = el
+    let rafId = 0
+    let lastId: string | null = null
+
+    function computeStickySection(): Section | null {
+      const scrollTop = scrollEl.scrollTop
       let current: Section | null = null
       for (const { item, i } of sectionHeaderIndices) {
         const m = rowVirtualizer.measurementsCache[i]
         const headerStart = m ? m.start : i * HEADER_ESTIMATE_PX
         if (headerStart < scrollTop) current = item.section
+        else break
       }
-      setStickySection(current)
+      return current
     }
 
-    update()
-    el.addEventListener("scroll", update, { passive: true })
+    function scheduleUpdate() {
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        const current = computeStickySection()
+        const nextId = current?.id ?? null
+        if (nextId === lastId) return
+        lastId = nextId
+        setStickySection(current)
+      })
+    }
+
+    // Seed once immediately for correct initial render.
+    scheduleUpdate()
+    scrollEl.addEventListener("scroll", scheduleUpdate, { passive: true })
     return () => {
-      el.removeEventListener("scroll", update)
+      if (rafId) cancelAnimationFrame(rafId)
+      scrollEl.removeEventListener("scroll", scheduleUpdate)
       setStickySection(null)
     }
-  }, [open, virtualItems, rowVirtualizer])
+  }, [open, rowVirtualizer, sectionHeaderIndices])
 
   useEffect(() => {
     if (highlightedCodes.length === 0) return
@@ -545,8 +591,160 @@ export function ActivityTable({
 
         <CardContent className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
           <div className="flex min-h-0 w-full flex-1 flex-col">
+              {/* Desktop: shadcn/ui Table (grouped + collapsible) */}
+              <div className="hidden min-h-0 flex-1 flex-col md:flex">
+                <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+                  <Table className="w-full">
+                    <TableHeader className="sticky top-0 z-10 border-b border-[#222222] bg-[#181818]">
+                      <TableRow className="border-[#222222] hover:bg-transparent">
+                        {headerGroup.headers.map((header) => {
+                          const sorted = header.column.getIsSorted()
+                          return (
+                            <TableHead
+                              key={header.id}
+                              className={cn(
+                                "h-auto px-7 py-2.5 text-[11px] font-medium tracking-[0.5px] text-[#555555] uppercase",
+                                header.column.id === "code" && "w-[1%] font-mono"
+                              )}
+                            >
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={header.column.getToggleSortingHandler()}
+                                className={cn(
+                                  "h-auto justify-start gap-1 rounded-none p-0 text-left hover:bg-transparent hover:text-[#777777]",
+                                  columnClassName(header.column.id)
+                                )}
+                              >
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                                {sorted === "asc" ? (
+                                  <ChevronUpIcon className="size-3 shrink-0 text-[#666666]" />
+                                ) : sorted === "desc" ? (
+                                  <ChevronDownIcon className="size-3 shrink-0 text-[#666666]" />
+                                ) : (
+                                  <ChevronsUpDownIcon className="size-3 shrink-0 text-[#555555] opacity-40" />
+                                )}
+                              </Button>
+                            </TableHead>
+                          )
+                        })}
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {sectionGroups.map(({ section, rows, totalInSection }) => {
+                        if (rows.length === 0 && (search || filterSectionIds.length > 0)) {
+                          return null
+                        }
+
+                        const isExpanded = expandedSections.has(section.id)
+
+                        return (
+                          <Fragment key={`group-${section.id}`}>
+                            <TableRow
+                              className="border-[#1E1E1E] bg-[#1A1A1A] hover:bg-[#202020]"
+                            >
+                              <TableCell
+                                colSpan={headerGroup.headers.length}
+                                className="px-7 py-2.5"
+                              >
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-auto w-full justify-start gap-2.5 rounded-none p-0 text-left hover:bg-transparent"
+                                  onClick={() => {
+                                    setExpandedSections((prev) => {
+                                      const next = new Set(prev)
+                                      if (next.has(section.id)) next.delete(section.id)
+                                      else next.add(section.id)
+                                      return next
+                                    })
+                                  }}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDownIcon className="size-3.5 shrink-0 text-[#EBEBEB]" />
+                                  ) : (
+                                    <ChevronRightIcon className="size-3.5 shrink-0 text-[#444444]" />
+                                  )}
+                                  <span
+                                    className={cn(
+                                      "flex-1 text-xs leading-4 font-semibold",
+                                      isExpanded ? "text-[#EBEBEB]" : "text-[#555555]"
+                                    )}
+                                  >
+                                    {section.title}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "text-[11px]",
+                                      isExpanded ? "text-[#444444]" : "text-[#333333]"
+                                    )}
+                                  >
+                                    {rows.length > 0 ? rows.length : totalInSection} activities
+                                  </span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+
+                            {isExpanded &&
+                              rows.map((r) => {
+                                const isHighlighted = highlightedCodes.includes(r.original.code)
+                                return (
+                                  <TableRow
+                                    key={`row-${r.id}`}
+                                    id={`activity-code-${r.original.code}`}
+                                    className={cn(
+                                      "border-[#1C1C1C]",
+                                      isHighlighted
+                                        ? "bg-[#12331D] hover:bg-[#143A20]"
+                                        : "bg-[#111111] hover:bg-[#151515]"
+                                    )}
+                                  >
+                                    <TableCell
+                                      className={cn(
+                                        "px-7 py-2.75 text-[13px] leading-5 font-mono",
+                                        isHighlighted
+                                          ? "font-semibold text-[#45C15B]"
+                                          : "text-[#666666]"
+                                      )}
+                                    >
+                                      {r.original.code}
+                                    </TableCell>
+                                    <TableCell
+                                      className={cn(
+                                        "px-7 py-2.75 text-[13px] leading-5",
+                                        "whitespace-normal [overflow-wrap:anywhere] break-words",
+                                        isHighlighted ? "text-[#ACEAB1]" : "text-[#888888]"
+                                      )}
+                                      title={r.original.division}
+                                    >
+                                      {r.original.division}
+                                    </TableCell>
+                                    <TableCell
+                                      className={cn(
+                                        "px-7 py-2.75 text-[13px] leading-5",
+                                        "whitespace-normal [overflow-wrap:anywhere] break-words",
+                                        isHighlighted ? "text-[#ACEAB1]" : "text-[#EBEBEB]"
+                                      )}
+                                    >
+                                      {r.original.activity}
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              })}
+                          </Fragment>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
               {/* Column header stays outside the vertical scroll region so row offsets match @tanstack/virtual */}
-              <div className="hidden shrink-0 grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,2fr)] items-center border-b border-[#222222] bg-[#181818] px-7 py-2.5 md:grid">
+              <div className="hidden shrink-0 grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,2fr)] items-center border-b border-[#222222] bg-[#181818] px-7 py-2.5 md:hidden">
                 {headerGroup.headers.map((header) => {
                   const sorted = header.column.getIsSorted()
                   return (
@@ -585,7 +783,7 @@ export function ActivityTable({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-auto w-full shrink-0 justify-start gap-2.5 rounded-none border-b border-[#1E1E1E] bg-[#1A1A1A] px-7 py-2.5 text-left hover:bg-[#202020]"
+                    className="h-auto w-full shrink-0 justify-start gap-2.5 rounded-none border-b border-[#1E1E1E] bg-[#1A1A1A] px-7 py-2.5 text-left hover:bg-[#202020] md:hidden"
                     onClick={() => {
                       setExpandedSections((prev) => {
                         const next = new Set(prev)
@@ -612,7 +810,7 @@ export function ActivityTable({
 
               <div
                 ref={scrollParentRef}
-                className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
+                className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] md:hidden"
               >
                 <div
                   className="relative w-full"
