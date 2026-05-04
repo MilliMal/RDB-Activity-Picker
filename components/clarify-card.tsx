@@ -1,12 +1,16 @@
 "use client"
 
 import { useId, useState } from "react"
+import { motion, useReducedMotion } from "motion/react"
 
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { pressScale, pressTapTransition, transitionFast } from "@/lib/motion"
 import type { ClarifyOption } from "@/lib/types"
+
+const MotionButton = motion(Button)
 
 interface ClarifyCardProps {
   question: string
@@ -33,6 +37,7 @@ export function ClarifyCard({
   const [showCustom, setShowCustom] = useState(false)
   const [customText, setCustomText] = useState("")
   const customInputId = useId()
+  const reduceMotion = useReducedMotion()
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -65,24 +70,28 @@ export function ClarifyCard({
 
           <div className="mt-1 flex flex-col gap-1.5">
             {options.map((opt) => (
-              <Button
+              <MotionButton
                 key={opt.value}
                 variant="ghost"
                 onClick={() => onSelect(opt)}
-                className="h-auto w-full justify-start rounded-[12px] bg-[#1C1C1C] px-3 py-3 text-left text-xs leading-[150%] text-[#888888] hover:bg-[#252525] hover:text-[#EBEBEB]"
+                className="h-auto w-full justify-start rounded-[12px] bg-[#1C1C1C] px-3 py-3 text-left text-xs leading-[150%] text-[#888888] transition-[color,background-color] duration-150 ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#252525] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#EBEBEB]"
+                whileTap={reduceMotion ? undefined : { scale: pressScale, transition: pressTapTransition }}
+                transition={transitionFast}
               >
                 {opt.label}
-              </Button>
+              </MotionButton>
             ))}
 
             {!showCustom ? (
-              <Button
+              <MotionButton
                 variant="ghost"
                 onClick={() => setShowCustom(true)}
-                className="h-auto w-full justify-start rounded-[12px] bg-[#1C1C1C] px-3 py-3 text-left text-[13px] leading-4 font-medium text-[#EBEBEB] hover:bg-[#252525] hover:text-[#EBEBEB]"
+                className="h-auto w-full justify-start rounded-[12px] bg-[#1C1C1C] px-3 py-3 text-left text-[13px] leading-4 font-medium text-[#EBEBEB] transition-[color,background-color] duration-150 ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#252525] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#EBEBEB]"
+                whileTap={reduceMotion ? undefined : { scale: pressScale, transition: pressTapTransition }}
+                transition={transitionFast}
               >
                 Other
-              </Button>
+              </MotionButton>
             ) : (
               <div className="flex w-full flex-col gap-1.5">
                 <label htmlFor={customInputId} className="sr-only">
@@ -104,17 +113,19 @@ export function ClarifyCard({
                     placeholder="Type here"
                     className="h-auto flex-1 border-0 bg-transparent p-0 text-[13px] text-[#EBEBEB] shadow-none outline-none placeholder:text-[#505050] focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-0"
                   />
-                  <Button
+                  <MotionButton
                     type="button"
                     size="xs"
                     onClick={() =>
                       customText.trim() && onCustom(customText.trim())
                     }
                     disabled={!customText.trim()}
-                    className="shrink-0 bg-[#2A2A2A] text-[#EBEBEB] hover:bg-[#3A3A3A]"
+                    className="shrink-0 bg-[#2A2A2A] text-[#EBEBEB] transition-[color,background-color] duration-150 ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#3A3A3A]"
+                    whileTap={reduceMotion ? undefined : { scale: pressScale, transition: pressTapTransition }}
+                    transition={transitionFast}
                   >
                     Submit
-                  </Button>
+                  </MotionButton>
                 </div>
               </div>
             )}

@@ -1,6 +1,14 @@
 "use client"
 
-import { useEffect, useId, useMemo, useRef, useState } from "react"
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
   flexRender,
@@ -25,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { easeOutStrong, transitionUi } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import type { ActivityCode, Section } from "@/lib/types"
 
@@ -34,6 +43,10 @@ interface ActivityTableProps {
   highlightedCodes: string[]
   open: boolean
   onClose: () => void
+  /** When true, skip enter motion (keyboard-opened table; emilkowal `strategy-keyboard-no-animate`). */
+  skipEntranceAnimation?: boolean
+  /** Called after enter motion finishes (or immediately if skipped); clear `skipEntranceAnimation` upstream. */
+  onEntranceAnimationSettled?: () => void
 }
 
 type VirtualListItem =
@@ -81,6 +94,8 @@ export function ActivityTable({
   highlightedCodes,
   open,
   onClose,
+  skipEntranceAnimation = false,
+  onEntranceAnimationSettled,
 }: ActivityTableProps) {
   const [search, setSearch] = useState("")
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -93,6 +108,8 @@ export function ActivityTable({
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const reduceMotion = useReducedMotion()
+  const [exitViaKeyboard, setExitViaKeyboard] = useState(false)
 
   const sectionIdToTitle = useMemo(() => {
     const m = new Map<string, string>()
@@ -127,6 +144,7 @@ export function ActivityTable({
       if (event.key === "Escape") {
         event.preventDefault()
         event.stopPropagation()
+        setExitViaKeyboard(true)
         onClose()
         return
       }
@@ -163,6 +181,18 @@ export function ActivityTable({
       }
     }
   }, [open, onClose])
+
+  /**
+   * Instant (0ms) entrances do not reliably invoke `onAnimationComplete`; clear the
+   * parent "keyboard entrance" flag on the next frame so later opens animate again.
+   */
+  useLayoutEffect(() => {
+    if (!open || !skipEntranceAnimation || !onEntranceAnimationSettled) return
+    const id = requestAnimationFrame(() => {
+      onEntranceAnimationSettled()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [open, skipEntranceAnimation, onEntranceAnimationSettled])
 
   const columns = useMemo<ColumnDef<ActivityCode>[]>(
     () => [
@@ -299,17 +329,77 @@ export function ActivityTable({
   const totalVisible = filteredData.length
   const headerGroup = table.getHeaderGroups()[0]
 
-  if (!open) return null
+  const keyboardInstantEnter = skipEntranceAnimation && !reduceMotion
+  const keyboardInstantExit = exitViaKeyboard && !reduceMotion
+
+  const backdropEnterTransition = reduceMotion
+    ? { duration: 0.12, ease: easeOutStrong }
+    : keyboardInstantEnter
+      ? { duration: 0 }
+      : { duration: 0.18, ease: easeOutStrong }
+
+  const panelEnterTransition = reduceMotion
+    ? { duration: 0.12, ease: easeOutStrong }
+    : keyboardInstantEnter
+      ? { duration: 0 }
+      : { duration: transitionUi.duration, ease: easeOutStrong }
+
+  const backdropExitTransition = reduceMotion
+    ? { duration: 0.1, ease: easeOutStrong }
+    : keyboardInstantExit
+      ? { duration: 0 }
+      : { duration: 0.18, ease: easeOutStrong }
+
+  const panelExitTransition = reduceMotion
+    ? { duration: 0.1, ease: easeOutStrong }
+    : keyboardInstantExit
+      ? { duration: 0 }
+      : { duration: transitionUi.duration, ease: easeOutStrong }
+
+  const backdropInitial = reduceMotion
+    ? { opacity: 0 }
+    : keyboardInstantEnter
+      ? false
+      : { opacity: 0 }
+
+  const panelInitial = reduceMotion
+    ? { opacity: 0 }
+    : keyboardInstantEnter
+      ? false
+      : { opacity: 0, y: "1.5%", scale: 0.98 }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-black/75 p-4">
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex max-h-[90vh] min-h-0 w-full max-w-275 min-w-0 flex-col outline-none"
-      >
+    <AnimatePresence
+      onExitComplete={() => {
+        setExitViaKeyboard(false)
+      }}
+    >
+      {open && (
+        <motion.div
+          key="activity-table-overlay"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-black/75 p-4"
+          initial={backdropInitial}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: backdropExitTransition }}
+          transition={backdropEnterTransition}
+        >
+          <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className="flex max-h-[90vh] min-h-0 w-full max-w-275 min-w-0 flex-col outline-none"
+            initial={panelInitial}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              y: reduceMotion || keyboardInstantExit ? 0 : "1%",
+              scale: reduceMotion || keyboardInstantExit ? 1 : 0.99,
+              transition: panelExitTransition,
+            }}
+            transition={panelEnterTransition}
+            style={{ willChange: "transform, opacity" }}
+          >
         <Card className="flex max-h-[90vh] min-h-0 w-full flex-col overflow-hidden rounded-[20px] border-[#252525] bg-[#111111] text-[#EBEBEB] shadow-2xl">
         <CardHeader className="min-w-0 gap-3 border-b border-[#1E1E1E] bg-[#101010] px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -330,7 +420,10 @@ export function ActivityTable({
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={onClose}
+              onClick={() => {
+                setExitViaKeyboard(false)
+                onClose()
+              }}
               aria-label="Close dialog"
               className="rounded-[14px] bg-[#2A2A2A] opacity-50 hover:bg-[#333333] hover:opacity-100"
             >
@@ -557,8 +650,10 @@ export function ActivityTable({
           </div>
         </CardContent>
       </Card>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

@@ -144,8 +144,22 @@
       transparent 65%
     );
     width: 55%;
-    animation: thinking-shimmer-sweep 2.2s ease-in-out infinite;
+    /* Linear sweep avoids ease-in-out “breathing” on infinite loops */
+    animation: thinking-shimmer-sweep 2.2s linear infinite;
     pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thinking-content-shimmer::after {
+      animation: none;
+    }
+  }
+
+  /** Fine-pointer hover only — avoids sticky tap states on touch */
+  @media (hover: hover) and (pointer: fine) {
+    .reasoning-trigger:hover {
+      color: #aaaaaa;
+    }
   }
 
   .thinking-content-shimmer > .thinking-content-markdown {

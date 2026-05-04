@@ -4,22 +4,48 @@ import {
   createContext,
   memo,
   type ComponentProps,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
+  useId,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "motion/react"
 import { BrainIcon, ChevronDownIcon } from "lucide-react"
 import { Streamdown } from "streamdown"
 
+import {
+  easeOutStrong,
+  pressScale,
+  pressTapTransition,
+  transitionFast,
+  transitionUi,
+} from "@/lib/motion"
 import { cn } from "@/lib/utils"
+
+type PresenceMotion = "full" | "instant"
 
 interface ReasoningContextValue {
   isStreaming: boolean
   isOpen: boolean
   duration: number | undefined
-  setIsOpen: (open: boolean) => void
+  setIsOpen: (
+    open: boolean,
+    opts?: { inputMode?: "pointer" | "keyboard" }
+  ) => void
+  contentId: string
+  presenceMotion: PresenceMotion
+  setPresenceMotion: Dispatch<SetStateAction<PresenceMotion>>
 }
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null)
@@ -50,21 +76,58 @@ export const Reasoning = memo(function Reasoning({
   children,
   ...props
 }: ReasoningProps) {
+  const contentId = useId()
   const [uncontrolledOpen, setUncontrolledOpen] = useState(
     defaultOpen ?? isStreaming
   )
+  const [presenceMotion, setPresenceMotion] =
+    useState<PresenceMotion>("full")
+
   const isOpen =
     open ?? (isStreaming && defaultOpen !== false ? true : uncontrolledOpen)
 
-  const setIsOpen = useCallback((nextOpen: boolean) => {
-    if (open === undefined) setUncontrolledOpen(nextOpen)
-    onOpenChange?.(nextOpen)
-  }, [onOpenChange, open])
+  const setIsOpen = useCallback(
+    (nextOpen: boolean, opts?: { inputMode?: "pointer" | "keyboard" }) => {
+      const inputMode = opts?.inputMode ?? "pointer"
+      setPresenceMotion(inputMode === "keyboard" ? "instant" : "full")
+      if (open === undefined) setUncontrolledOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [onOpenChange, open]
+  )
 
   const value = useMemo(
-    () => ({ duration: durationProp, isOpen, isStreaming, setIsOpen }),
-    [durationProp, isOpen, isStreaming, setIsOpen]
+    () => ({
+      contentId,
+      duration: durationProp,
+      isOpen,
+      isStreaming,
+      presenceMotion,
+      setIsOpen,
+      setPresenceMotion,
+    }),
+    [
+      contentId,
+      durationProp,
+      isOpen,
+      isStreaming,
+      presenceMotion,
+      setIsOpen,
+      setPresenceMotion,
+    ]
   )
+
+  /**
+   * Zero-duration "instant" opens do not reliably fire `onAnimationComplete` in Motion,
+   * which left `presenceMotion === "instant"` stuck and killed all later transitions.
+   */
+  useEffect(() => {
+    if (!isOpen || presenceMotion !== "instant") return
+    const id = requestAnimationFrame(() => {
+      setPresenceMotion("full")
+    })
+    return () => cancelAnimationFrame(id)
+  }, [isOpen, presenceMotion])
 
   return (
     <ReasoningContext.Provider value={value}>
@@ -75,7 +138,7 @@ export const Reasoning = memo(function Reasoning({
   )
 })
 
-export type ReasoningTriggerProps = ComponentProps<"button"> & {
+export type ReasoningTriggerProps = HTMLMotionProps<"button"> & {
   getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode
 }
 
@@ -90,38 +153,81 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({
   children,
   getThinkingMessage = defaultGetThinkingMessage,
   type = "button",
+  onPointerDown: onPointerDownProp,
+  onMouseDown: onMouseDownProp,
+  onTouchStart: onTouchStartProp,
+  onBlur: onBlurProp,
+  onClick: onClickProp,
   ...props
 }: ReasoningTriggerProps) {
-  const { isStreaming, isOpen, duration, setIsOpen } = useReasoning()
+  const { isStreaming, isOpen, duration, setIsOpen, contentId, presenceMotion } =
+    useReasoning()
+  const reduceMotion = useReducedMotion()
+  const fromPointerRef = useRef(false)
+
+  const instantUi = presenceMotion === "instant" || reduceMotion
 
   return (
-    <button
+    <motion.button
       type={type}
+      layout={false}
+      whileTap={
+        reduceMotion
+          ? undefined
+          : { scale: pressScale, transition: pressTapTransition }
+      }
+      transition={transitionFast}
       className={cn(
-        "flex w-full items-center gap-2 text-left text-[13px] text-[#808080] transition-colors hover:text-[#AAAAAA]",
+        "reasoning-trigger flex w-full items-center gap-2 text-left text-[13px] text-[#808080] transition-colors duration-150 ease-out",
         className
       )}
-      onClick={() => setIsOpen(!isOpen)}
+      aria-expanded={isOpen}
+      aria-controls={contentId}
       {...props}
+      onPointerDown={(e) => {
+        fromPointerRef.current = true
+        onPointerDownProp?.(e)
+      }}
+      onMouseDown={(e) => {
+        fromPointerRef.current = true
+        onMouseDownProp?.(e)
+      }}
+      onTouchStart={(e) => {
+        fromPointerRef.current = true
+        onTouchStartProp?.(e)
+      }}
+      onBlur={(e) => {
+        onBlurProp?.(e)
+        fromPointerRef.current = false
+      }}
+      onClick={(e) => {
+        onClickProp?.(e)
+        const mode = fromPointerRef.current ? "pointer" : "keyboard"
+        fromPointerRef.current = false
+        setIsOpen(!isOpen, { inputMode: mode })
+      }}
     >
       {children ?? (
         <>
           <BrainIcon className="size-4 shrink-0" aria-hidden />
           <span>{getThinkingMessage(isStreaming, duration)}</span>
-          <ChevronDownIcon
-            className={cn(
-              "size-4 shrink-0 transition-transform",
-              isOpen && "rotate-180"
-            )}
+          <motion.span
+            className="inline-flex shrink-0"
             aria-hidden
-          />
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={
+              instantUi ? { duration: 0 } : transitionUi
+            }
+          >
+            <ChevronDownIcon className="size-4" />
+          </motion.span>
         </>
       )}
-    </button>
+    </motion.button>
   )
 })
 
-export type ReasoningContentProps = ComponentProps<"div"> & {
+export type ReasoningContentProps = Omit<HTMLMotionProps<"div">, "children"> & {
   children: string
 }
 
@@ -130,21 +236,52 @@ export const ReasoningContent = memo(function ReasoningContent({
   children,
   ...props
 }: ReasoningContentProps) {
-  const { isOpen, isStreaming } = useReasoning()
-  if (!isOpen) return null
+  const { isOpen, isStreaming, contentId, presenceMotion } = useReasoning()
+  const reduceMotion = useReducedMotion()
+
+  const keyboardInstant = presenceMotion === "instant"
+
+  const presenceTransition = reduceMotion
+    ? { duration: 0.12, ease: easeOutStrong }
+    : keyboardInstant
+      ? { duration: 0 }
+      : { duration: transitionUi.duration, ease: easeOutStrong }
+
+  const initialState = reduceMotion
+    ? { opacity: 0 }
+    : keyboardInstant
+      ? false
+      : { opacity: 0, y: "-6%" }
+
+  const exitState = reduceMotion
+    ? { opacity: 0 }
+    : keyboardInstant
+      ? { opacity: 0 }
+      : { opacity: 0, y: "-4%" }
 
   return (
-    <div
-      className={cn(
-        "mt-2 max-h-50 overflow-y-auto text-[13px] leading-[160%] text-[#808080]",
-        isStreaming && "thinking-content-shimmer",
-        className
+    <AnimatePresence initial={false}>
+      {isOpen && (
+        <motion.div
+          key="reasoning-body"
+          id={contentId}
+          layout={false}
+          initial={initialState}
+          animate={{ opacity: 1, y: 0 }}
+          exit={exitState}
+          transition={presenceTransition}
+          className={cn(
+            "mt-2 max-h-50 overflow-y-auto text-[13px] leading-[160%] text-[#808080]",
+            isStreaming && "thinking-content-shimmer",
+            className
+          )}
+          {...props}
+        >
+          <Streamdown className="thinking-content-markdown [&_*]:text-[#808080]">
+            {children}
+          </Streamdown>
+        </motion.div>
       )}
-      {...props}
-    >
-      <Streamdown className="thinking-content-markdown [&_*]:text-[#808080]">
-        {children}
-      </Streamdown>
-    </div>
+    </AnimatePresence>
   )
 })

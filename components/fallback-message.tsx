@@ -3,10 +3,12 @@
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import type { PressInputMode } from "@/lib/use-pointer-press-source"
+import { usePointerPressSource } from "@/lib/use-pointer-press-source"
 
 interface FallbackMessageProps {
   reason: "validation-error" | "max-rounds"
-  onBrowseTable: () => void
+  onBrowseTable: (mode: PressInputMode) => void
   onRetry: () => void
   startedAt: number | null
 }
@@ -17,6 +19,8 @@ export function FallbackMessage({
   onRetry,
   startedAt,
 }: FallbackMessageProps) {
+  const browsePress = usePointerPressSource()
+
   const message =
     reason === "max-rounds"
       ? "After a few clarifications we still couldn't narrow it down. Browse the full table to find your activity."
@@ -42,7 +46,8 @@ export function FallbackMessage({
 
           <div className="flex gap-2">
             <Button
-              onClick={onBrowseTable}
+              {...browsePress.bind}
+              onClick={browsePress.wrapClick(onBrowseTable)}
               variant="outline"
               className="flex-1 border-[#2A2A2A] bg-[#1C1C1C] text-[#EBEBEB] hover:bg-[#2A2A2A] hover:text-[#EBEBEB]"
             >

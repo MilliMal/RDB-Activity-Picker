@@ -10,6 +10,9 @@ import {
   useImperativeHandle,
   useRef,
 } from "react"
+import { motion, useReducedMotion } from "motion/react"
+
+import { ui } from "@/lib/motion"
 import { CornerDownLeftIcon, LoaderCircleIcon, SquareIcon } from "lucide-react"
 import type { ChatStatus } from "ai"
 
@@ -47,7 +50,7 @@ export function PromptInput({
   return (
     <form
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-[18px] border border-white/15 bg-[#202020] text-[#EBEBEB] shadow-sm transition-colors focus-within:border-white/35 focus-within:ring-2 focus-within:ring-white/20 aria-invalid:border-[#FF6B6B]/80 aria-invalid:ring-2 aria-invalid:ring-[#FF6B6B]/20 data-[disabled=true]:opacity-60",
+        "flex w-full flex-col overflow-hidden rounded-[18px] border border-white/15 bg-[#202020] text-[#EBEBEB] shadow-sm transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out focus-within:border-white/35 focus-within:ring-2 focus-within:ring-white/20 aria-invalid:border-[#FF6B6B]/80 aria-invalid:ring-2 aria-invalid:ring-[#FF6B6B]/20 data-[disabled=true]:opacity-60",
         className
       )}
       onSubmit={handleSubmit}
@@ -141,10 +144,26 @@ export function PromptInputSubmit({
   children,
   ...props
 }: PromptInputSubmitProps) {
+  const reduceMotion = useReducedMotion()
   const isGenerating = status === "submitted" || status === "streaming"
   const icon =
     status === "submitted" ? (
-      <LoaderCircleIcon className="size-4 animate-spin text-[#808080]" />
+      reduceMotion ? (
+        <LoaderCircleIcon className="size-4 text-[#808080]" aria-hidden />
+      ) : (
+        <motion.span
+          className="inline-flex"
+          aria-hidden
+          animate={{ rotate: 360 }}
+          transition={{
+            repeat: Infinity,
+            duration: ui.fastMs / 1000,
+            ease: "linear",
+          }}
+        >
+          <LoaderCircleIcon className="size-4 text-[#808080]" />
+        </motion.span>
+      )
     ) : status === "streaming" ? (
       <SquareIcon className="size-3.5 text-[#808080]" />
     ) : (

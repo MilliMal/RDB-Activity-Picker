@@ -1,8 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { ExternalLinkIcon, PencilIcon } from "lucide-react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import { ActivityInput } from "@/components/activity-input"
 import { ActivityTable } from "@/components/activity-table"
@@ -13,7 +14,10 @@ import { MatchResults } from "@/components/match-results"
 import { RedirectMessage } from "@/components/redirect-message"
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
+import { easeOutStrong } from "@/lib/motion"
 import { MAX_CLARIFY_ROUNDS } from "@/lib/constants"
+import type { PressInputMode } from "@/lib/use-pointer-press-source"
+import { usePointerPressSource } from "@/lib/use-pointer-press-source"
 import { usePickerFlow } from "@/lib/hooks/use-picker-flow"
 import type { ActivityCode, Section, ThinkingSegment } from "@/lib/types"
 import type { ThinkingPhase } from "@/components/thinking-indicator"
@@ -47,35 +51,26 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
     retry,
   } = usePickerFlow()
 
+  const reduceMotion = useReducedMotion()
+
   const [tableOpen, setTableOpen] = useState(false)
+  const [tableKeyboardEntrance, setTableKeyboardEntrance] = useState(false)
 
-  function scrollToTable() {
+  const browseTable = useCallback((mode: PressInputMode) => {
+    setTableKeyboardEntrance(mode === "keyboard")
     setTableOpen(true)
-  }
+  }, [])
 
-  const showInput =
-    state.stage === "idle" || editMode
+  const tableBrowsePress = usePointerPressSource()
 
-  /** Clarify prompts + composer stay fixed at the bottom; thinking streams inline in the transcript */
+  const showInput = state.stage === "idle" || editMode
+
   const showBottomPanel =
     state.stage === "early-clarify" ||
     state.stage === "clarify" ||
     showInput
 
   const showBubble = Boolean(input) && !showInput && state.stage !== "redirect"
-
-  function renderThinkingSegment(seg: ThinkingSegment, key: string) {
-    return (
-      <TranscriptThinking key={key}>
-        <ThinkingIndicator
-          isStreaming={false}
-          startedAt={seg.startedAt}
-          completedAt={seg.completedAt}
-          phase={seg.phase as ThinkingPhase}
-        />
-      </TranscriptThinking>
-    )
-  }
 
   const liveAnchor = liveThinking?.placement
   const liveThinkingInitial =
@@ -90,65 +85,148 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
     state.stage === "clarify" ||
     state.stage === "early-clarify"
 
+  // ─── Motion tokens ──────────────────────────────────────────────────────────
+  // strategy-purpose-required: every animation serves orientation / feedback.
+  // timing-300ms-max: 220ms entrance, 180ms exit — under the 300ms ceiling.
+  // props-transform-opacity: only opacity + translateY.
+  // polish-reduced-motion: opacity-only fallback when prefers-reduced-motion.
+
+  const dur = reduceMotion ? 0.12 : 0.22
+  const exitDur = reduceMotion ? 0.1 : 0.18
+
+  // Feed item: slides up from below to signal "arrival" (strategy-feedback-immediate).
+  const feedIn = {
+    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: "5%" },
+    animate: { opacity: 1, y: 0 },
+    exit: reduceMotion ? { opacity: 0 } : { opacity: 0, y: "3%" },
+    transition: { duration: dur, ease: easeOutStrong },
+  }
+
+  // Bottom panel: tighter y — it's anchored to the viewport edge.
+  const bottomIn = {
+    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: "4%" },
+    animate: { opacity: 1, y: 0 },
+    exit: reduceMotion ? { opacity: 0 } : { opacity: 0, y: "4%" },
+    transition: { duration: dur, ease: easeOutStrong },
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Standalone thinking segment (initial pipeline) — gets its own entrance.
+   * Do NOT use inside clarify-history turns: the parent motion.div already
+   * animates, compounding opacity produces a dimmer-than-intended entrance.
+   */
+  function renderThinkingSegment(seg: ThinkingSegment, key: string) {
+    return (
+      <motion.div
+        key={key}
+        initial={feedIn.initial}
+        animate={feedIn.animate}
+        exit={feedIn.exit}
+        transition={{ duration: exitDur, ease: easeOutStrong }}
+      >
+        <TranscriptThinking>
+          <ThinkingIndicator
+            isStreaming={false}
+            startedAt={seg.startedAt}
+            completedAt={seg.completedAt}
+            phase={seg.phase as ThinkingPhase}
+          />
+        </TranscriptThinking>
+      </motion.div>
+    )
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
   return (
-    <div className="flex min-h-svh flex-col items-center bg-black">
+    <div className="flex h-svh flex-col items-center bg-black">
       <div className="flex w-full max-w-138 flex-1 min-h-0 flex-col">
         <div
-          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-15 ${showBottomPanel ? "pb-4" : "pb-15"}`}
+          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-8 sm:pt-15 ${showBottomPanel ? "pb-4" : "pb-8 sm:pb-15"}`}
         >
           <div className="flex flex-col gap-4">
+            {/* Static heading — no animation: strategy-purpose-required */}
             <div className="flex flex-col gap-4">
-              <h1 className="text-5xl leading-none tracking-[-0.04em] text-white">
+              <h1 className="text-3xl sm:text-5xl leading-none tracking-[-0.04em] text-white">
                 Find your
                 <br />
                 business Activities
               </h1>
               <p className="text-base leading-[130%] tracking-[-0.04em] text-[#AAAAAA]">
-                Describe what your business does and we&apos;ll match you
-                <br />
-                to the right official activity codes for registration.
+                Describe what your business does and we&apos;ll match you to the right official activity codes for registration.
               </p>
             </div>
 
             <div className="flex flex-col gap-4 px-4 py-6">
-              {showBubble && (
-                <div className="flex items-center justify-end gap-2">
-                  <div className="max-w-[80%] overflow-hidden rounded-[18px] border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2 shadow-sm shadow-black/20">
-                    <p className="text-[13px] leading-[160%] text-[#EBEBEB]">
-                      {input}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={edit}
-                    aria-label="Edit your description"
-                    className="rounded-[10px] opacity-50 hover:opacity-100"
-                  >
-                    <PencilIcon className="size-4 text-[#808080]" aria-hidden />
-                  </Button>
-                </div>
-              )}
 
+              {/* User bubble — strategy-feedback-immediate: confirms the submit action */}
+              <AnimatePresence>
+                {showBubble && (
+                  <motion.div
+                    key="user-bubble"
+                    {...feedIn}
+                    className="flex items-center justify-end gap-2"
+                  >
+                    <div className="max-w-[80%] overflow-hidden rounded-[18px] border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2 shadow-sm shadow-black/20">
+                      <p className="text-[13px] leading-[160%] text-[#EBEBEB]">
+                        {input}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={edit}
+                      aria-label="Edit your description"
+                      className="rounded-[10px] opacity-50 hover:opacity-100"
+                    >
+                      <PencilIcon className="size-4 text-[#808080]" aria-hidden />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Initial thinking segments — each one arrives independently */}
               {initialThinkingSegments.map((seg, i) =>
                 renderThinkingSegment(seg, `init-${i}-${seg.phase}`)
               )}
 
-              {liveThinkingInitial && liveThinking && (
-                <TranscriptThinking>
-                  <ThinkingIndicator
-                    isStreaming={true}
-                    startedAt={liveThinking.startedAt}
-                    phase={liveThinking.phase as ThinkingPhase}
-                  />
-                </TranscriptThinking>
-              )}
+              {/* Live thinking (initial placement) — exits when streaming ends */}
+              <AnimatePresence>
+                {liveThinkingInitial && liveThinking && (
+                  <motion.div
+                    key="live-thinking-initial"
+                    initial={feedIn.initial}
+                    animate={feedIn.animate}
+                    exit={feedIn.exit}
+                    transition={{ duration: exitDur, ease: easeOutStrong }}
+                  >
+                    <TranscriptThinking>
+                      <ThinkingIndicator
+                        isStreaming={true}
+                        startedAt={liveThinking.startedAt}
+                        phase={liveThinking.phase as ThinkingPhase}
+                      />
+                    </TranscriptThinking>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
+              {/* Clarify Q&A history — each completed turn slides in as a unit.
+                  Thinking segments inside are NOT wrapped separately: parent opacity
+                  already animates and compounding would dim them. */}
               {clarifyHistory.length > 0 && (
                 <div className="flex flex-col gap-4">
                   {clarifyHistory.map((turn, i) => (
-                    <div key={i} className="flex flex-col gap-4">
+                    <motion.div
+                      key={i}
+                      initial={feedIn.initial}
+                      animate={feedIn.animate}
+                      transition={feedIn.transition}
+                      className="flex flex-col gap-4"
+                    >
                       <div className="max-w-[85%] self-start rounded-[16px] bg-[#151515] px-3.5 py-2.5">
                         <p className="text-[13px] leading-[160%] text-[#AAAAAA]">
                           {turn.question}
@@ -162,140 +240,207 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
                       {!(
                         state.stage === "matched" && i === lastClarifyTurnIdx
                       ) &&
-                        (clarifyAnswerThinking[i] ?? []).map((seg, j) =>
-                          renderThinkingSegment(
-                            seg,
-                            `clarify-${i}-${j}-${seg.phase}`
-                          )
+                        (clarifyAnswerThinking[i] ?? []).map((seg, j) => (
+                          <TranscriptThinking key={`clarify-${i}-${j}-${seg.phase}`}>
+                            <ThinkingIndicator
+                              isStreaming={false}
+                              startedAt={seg.startedAt}
+                              completedAt={seg.completedAt}
+                              phase={seg.phase as ThinkingPhase}
+                            />
+                          </TranscriptThinking>
+                        ))}
+                      <AnimatePresence>
+                        {liveThinkingClarifyIndex === i && liveThinking && (
+                          <motion.div
+                            key={`live-clarify-${i}`}
+                            initial={feedIn.initial}
+                            animate={feedIn.animate}
+                            exit={feedIn.exit}
+                            transition={{ duration: exitDur, ease: easeOutStrong }}
+                          >
+                            <TranscriptThinking>
+                              <ThinkingIndicator
+                                isStreaming={true}
+                                startedAt={liveThinking.startedAt}
+                                phase={liveThinking.phase as ThinkingPhase}
+                              />
+                            </TranscriptThinking>
+                          </motion.div>
                         )}
-                      {liveThinkingClarifyIndex === i && liveThinking && (
-                        <TranscriptThinking>
-                          <ThinkingIndicator
-                            isStreaming={true}
-                            startedAt={liveThinking.startedAt}
-                            phase={liveThinking.phase as ThinkingPhase}
-                          />
-                        </TranscriptThinking>
-                      )}
-                    </div>
+                      </AnimatePresence>
+                    </motion.div>
                   ))}
                 </div>
               )}
 
-              {state.stage === "clarify" && (
-                <div className="max-w-[85%] self-start rounded-[16px] bg-[#151515] px-3.5 py-2.5">
-                  <p
-                    className="text-[13px] leading-[160%] text-[#AAAAAA]"
-                    role="status"
-                    aria-live="polite"
+              {/* Current clarify question — exits when stage changes */}
+              <AnimatePresence>
+                {state.stage === "clarify" && (
+                  <motion.div
+                    key="current-clarify-q"
+                    initial={feedIn.initial}
+                    animate={feedIn.animate}
+                    exit={feedIn.exit}
+                    transition={{ duration: exitDur, ease: easeOutStrong }}
+                    className="max-w-[85%] self-start rounded-[16px] bg-[#151515] px-3.5 py-2.5"
                   >
-                    {state.question}
-                  </p>
-                </div>
-              )}
+                    <p
+                      className="text-[13px] leading-[160%] text-[#AAAAAA]"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      {state.question}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {state.stage === "matched" && (
-                <MatchResults
-                  codes={state.codes}
-                  businessUnderstanding={state.businessUnderstanding}
-                  onBrowseTable={scrollToTable}
-                  matchPassThinking={
-                    lastClarifyTurnIdx >= 0
-                      ? (clarifyAnswerThinking[lastClarifyTurnIdx]?.[0] ??
-                        null)
-                      : null
-                  }
-                />
-              )}
+              {/* Result cards — strategy-feedback-immediate: the answer arriving */}
+              <AnimatePresence>
+                {state.stage === "matched" && (
+                  <motion.div
+                    key="matched"
+                    initial={feedIn.initial}
+                    animate={feedIn.animate}
+                    exit={feedIn.exit}
+                    transition={{ duration: exitDur, ease: easeOutStrong }}
+                  >
+                    <MatchResults
+                      codes={state.codes}
+                      businessUnderstanding={state.businessUnderstanding}
+                      onBrowseTable={browseTable}
+                      matchPassThinking={
+                        lastClarifyTurnIdx >= 0
+                          ? (clarifyAnswerThinking[lastClarifyTurnIdx]?.[0] ??
+                            null)
+                          : null
+                      }
+                    />
+                  </motion.div>
+                )}
+                {state.stage === "redirect" && (
+                  <motion.div
+                    key="redirect"
+                    initial={feedIn.initial}
+                    animate={feedIn.animate}
+                    exit={feedIn.exit}
+                    transition={{ duration: exitDur, ease: easeOutStrong }}
+                  >
+                    <RedirectMessage
+                      reason={state.reason}
+                      onRetry={retry}
+                      onSelectExample={submit}
+                      examplesDisabled={isStreaming}
+                      startedAt={startedAt}
+                    />
+                  </motion.div>
+                )}
+                {(state.stage === "fallback" || state.stage === "error") && (
+                  <motion.div
+                    key="fallback"
+                    initial={feedIn.initial}
+                    animate={feedIn.animate}
+                    exit={feedIn.exit}
+                    transition={{ duration: exitDur, ease: easeOutStrong }}
+                  >
+                    <FallbackMessage
+                      reason={
+                        state.stage === "error"
+                          ? "validation-error"
+                          : state.reason
+                      }
+                      onBrowseTable={browseTable}
+                      onRetry={retry}
+                      startedAt={startedAt}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {state.stage === "redirect" && (
-                <RedirectMessage
-                  reason={state.reason}
-                  onRetry={retry}
-                  onSelectExample={submit}
-                  examplesDisabled={isStreaming}
-                  startedAt={startedAt}
-                />
-              )}
-
-              {(state.stage === "fallback" || state.stage === "error") && (
-                <FallbackMessage
-                  reason={
-                    state.stage === "error" ? "validation-error" : state.reason
-                  }
-                  onBrowseTable={scrollToTable}
-                  onRetry={retry}
-                  startedAt={startedAt}
-                />
-              )}
             </div>
           </div>
         </div>
 
-        {showBottomPanel && (
-          <div
-            className={`flex shrink-0 flex-col gap-4 bg-black px-4 pt-2 ${showDisclaimer ? "pb-4" : "pb-15"}`}
-          >
-            {state.stage === "early-clarify" && (
-              <EarlyClarifyCard
-                reason={state.question}
-                onRefine={refineEarlyClarify}
-                startedAt={startedAt}
-              />
-            )}
-
-            {state.stage === "clarify" && (
-              <ClarifyCard
-                question={state.question}
-                options={state.options}
-                onSelect={selectClarifyOption}
-                onCustom={submitCustomClarify}
-                round={state.round}
-                maxRounds={MAX_CLARIFY_ROUNDS}
-                startedAt={startedAt}
-                showQuestionInCard={false}
-              />
-            )}
-
-            {showInput && (
-              <div className="flex flex-col gap-3">
-                {state.stage === "idle" && !editMode && (
-                  <div className="flex w-full flex-col items-center gap-1">
-                    <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
-                      <span className="text-sm tracking-[-0.04em] text-[#AAAAAA]">
-                        Start by describing your business below, or look at the
-                        full list
-                      </span>
-                      <Button
-                        type="button"
-                        variant="link"
-                        onClick={scrollToTable}
-                        className="h-auto gap-0.5 p-0 text-sm tracking-[-0.04em] text-[#414141] underline underline-offset-2 hover:text-[#777777]"
-                      >
-                        here
-                        <ExternalLinkIcon className="size-2" aria-hidden />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                <ActivityInput
-                  key={editMode ? `edit-${input}` : "compose"}
-                  onSubmit={submit}
-                  disabled={isStreaming}
-                  defaultValue={editMode ? input : ""}
+        {/* Bottom panel — slides up on entry, slides down on exit.
+            interact-interruptible: Framer Motion handles mid-animation reversals. */}
+        <AnimatePresence>
+          {showBottomPanel && (
+            <motion.div
+              key="bottom-panel"
+              {...bottomIn}
+              className={`flex shrink-0 flex-col gap-4 bg-black px-4 pt-2 ${showDisclaimer ? "pb-4" : "pb-8 sm:pb-15"}`}
+            >
+              {state.stage === "early-clarify" && (
+                <EarlyClarifyCard
+                  reason={state.question}
+                  onRefine={refineEarlyClarify}
+                  startedAt={startedAt}
                 />
-              </div>
-            )}
-          </div>
-        )}
+              )}
 
-        {showDisclaimer && (
-          <p className="shrink-0 px-4 pb-15 pt-2 text-center text-[13px] leading-none text-[#515151]">
-            AI can make mistakes. Always verify your selection
-            <br />
-            using the activity table below.
-          </p>
-        )}
+              {state.stage === "clarify" && (
+                <ClarifyCard
+                  question={state.question}
+                  options={state.options}
+                  onSelect={selectClarifyOption}
+                  onCustom={submitCustomClarify}
+                  round={state.round}
+                  maxRounds={MAX_CLARIFY_ROUNDS}
+                  startedAt={startedAt}
+                  showQuestionInCard={false}
+                />
+              )}
+
+              {showInput && (
+                <div className="flex flex-col gap-3">
+                  {state.stage === "idle" && !editMode && (
+                    <div className="flex w-full flex-col items-center gap-1">
+                      <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                        <span className="text-sm tracking-[-0.04em] text-[#AAAAAA]">
+                          Start by describing your business below, or look at the
+                          full list
+                        </span>
+                        <Button
+                          type="button"
+                          variant="link"
+                          {...tableBrowsePress.bind}
+                          onClick={tableBrowsePress.wrapClick(browseTable)}
+                          className="h-auto gap-0.5 p-0 text-sm tracking-[-0.04em] text-[#414141] underline underline-offset-2 hover:text-[#777777]"
+                        >
+                          here
+                          <ExternalLinkIcon className="size-2" aria-hidden />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <ActivityInput
+                    key={editMode ? `edit-${input}` : "compose"}
+                    onSubmit={submit}
+                    disabled={isStreaming}
+                    defaultValue={editMode ? input : ""}
+                  />
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Disclaimer — opacity-only: it's a footnote, not a content arrival */}
+        <AnimatePresence>
+          {showDisclaimer && (
+            <motion.p
+              key="disclaimer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: dur, ease: easeOutStrong }}
+              className="shrink-0 px-4 pb-8 sm:pb-15 pt-2 text-center text-[13px] leading-none text-[#515151]"
+            >
+              AI can make mistakes. Always verify your selection using the activity table below.
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       <ActivityTable
@@ -305,6 +450,8 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
           state.stage === "matched" ? state.codes.map((c) => c.code) : []
         }
         open={tableOpen}
+        skipEntranceAnimation={tableKeyboardEntrance}
+        onEntranceAnimationSettled={() => setTableKeyboardEntrance(false)}
         onClose={() => setTableOpen(false)}
       />
     </div>

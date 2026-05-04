@@ -1,16 +1,26 @@
 "use client"
 
 import { ExternalLinkIcon } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 
 import { MessageResponse } from "@/components/ai-elements/message"
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  easeOutStrong,
+  pressScale,
+  pressTapTransition,
+  transitionFast,
+  transitionUi,
+} from "@/lib/motion"
 import type { MatchedCode, ThinkingSegment } from "@/lib/types"
+import type { PressInputMode } from "@/lib/use-pointer-press-source"
+import { usePointerPressSource } from "@/lib/use-pointer-press-source"
 
 interface MatchResultsProps {
   codes: MatchedCode[]
   businessUnderstanding: string
-  onBrowseTable: () => void
+  onBrowseTable: (mode: PressInputMode) => void
   /**
    * Present after a clarify answer: one thought block covering the final code pass,
    * merged with synthesis copy (avoids a duplicate thought above the card).
@@ -26,6 +36,8 @@ export function MatchResults({
   matchPassThinking,
 }: MatchResultsProps) {
   const understanding = businessUnderstanding.trim()
+  const browsePress = usePointerPressSource()
+  const reduceMotion = useReducedMotion()
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-col">
@@ -57,9 +69,16 @@ Matched the description against the official activity code table and selected th
             </p>
 
             <div className="flex flex-col gap-3">
-              {codes.map((code) => (
-                <div
+              {codes.map((code, index) => (
+                <motion.div
                   key={code.code}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: "4%" }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: reduceMotion ? 0.12 : transitionUi.duration,
+                    ease: easeOutStrong,
+                    delay: index * 0.04,
+                  }}
                   className="flex flex-col gap-1.5 rounded-[12px] px-3 py-3"
                 >
                   <div className="flex items-center gap-2">
@@ -75,7 +94,7 @@ Matched the description against the official activity code table and selected th
                   <MessageResponse className="text-[12px] leading-[150%] text-[#888888]">
                     {code.reason}
                   </MessageResponse>
-                </div>
+                </motion.div>
               ))}
             </div>
 
@@ -83,14 +102,17 @@ Matched the description against the official activity code table and selected th
               <span className="text-[12px] leading-4 text-[#888888]">
                 Not your activity?
               </span>
-              <button
+              <motion.button
                 type="button"
-                onClick={onBrowseTable}
-                className="inline-flex items-center gap-1 rounded-[2px] text-[12px] font-medium leading-4 text-[#2563EB] underline underline-offset-2 outline-none transition-colors hover:text-[#3B82F6] focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
+                {...browsePress.bind}
+                onClick={browsePress.wrapClick(onBrowseTable)}
+                className="inline-flex items-center gap-1 rounded-[2px] text-[12px] font-medium leading-4 text-[#2563EB] underline underline-offset-2 outline-none transition-[color,opacity] duration-150 ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#3B82F6] focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
+                whileTap={reduceMotion ? undefined : { scale: pressScale, transition: pressTapTransition }}
+                transition={transitionFast}
               >
                 Browse full activity table
                 <ExternalLinkIcon className="size-3 shrink-0" aria-hidden />
-              </button>
+              </motion.button>
             </div>
           </div>
         </CardContent>
