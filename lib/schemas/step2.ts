@@ -4,6 +4,7 @@ import type { Step2Result } from "@/lib/types"
 export const step2Schema = z.union([
   z.object({
     type: z.literal("match"),
+    businessUnderstanding: z.string().min(1).max(1200),
     codes: z
       .array(
         z.object({

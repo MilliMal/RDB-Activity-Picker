@@ -17,6 +17,9 @@ Ask yourself: "Does the answer to my question change which codes
 I return?" If yes, clarify. If no, just match.
 
 Clarify:
+  ✓ The description lists several unrelated goods or services but does
+    not say whether you run one shop, separate businesses, or what the
+    main activity is — need that to avoid inventing one code per keyword.
   ✓ You sell tomatoes — but do you grow them or buy them to resell?
     (Changes between A and G)
   ✓ You do transport — do you carry passengers or cargo?

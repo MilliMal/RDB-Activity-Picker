@@ -34,6 +34,8 @@ export interface ClarifyOption {
 
 export interface Step2MatchResult {
   type: "match"
+  /** Plain-language synthesis of the business before codes were chosen */
+  businessUnderstanding: string
   codes: MatchedCode[]
 }
 
@@ -74,7 +76,7 @@ export type FlowState =
       options: ClarifyOption[]
       round: number
     }
-  | { stage: "matched"; codes: MatchedCode[] }
+  | { stage: "matched"; codes: MatchedCode[]; businessUnderstanding: string }
   | { stage: "redirect"; reason: string }
   | { stage: "fallback"; reason: "validation-error" | "max-rounds" }
   | { stage: "error"; message: string }

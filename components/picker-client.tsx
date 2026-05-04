@@ -13,6 +13,7 @@ import { RedirectMessage } from "@/components/redirect-message"
 import { RetryLink } from "@/components/retry-link"
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { MAX_CLARIFY_ROUNDS } from "@/lib/constants"
 import { usePickerFlow } from "@/lib/hooks/use-picker-flow"
 import type { ActivityCode, Section } from "@/lib/types"
@@ -46,12 +47,7 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
   }
 
   const showInput =
-    state.stage === "idle" ||
-    state.stage === "checking" ||
-    state.stage === "classifying" ||
-    state.stage === "matching-sections" ||
-    state.stage === "matching-codes" ||
-    editMode
+    state.stage === "idle" || editMode
 
   const showBubble = Boolean(input) && !showInput && state.stage !== "redirect"
 
@@ -74,7 +70,7 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
         <div className="flex flex-1 flex-col justify-end gap-7 px-4 py-6">
           {showBubble && (
             <div className="flex items-center justify-end gap-2">
-              <div className="max-w-[80%] overflow-hidden rounded-full border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2 shadow-sm shadow-black/20">
+              <div className="max-w-[80%] overflow-hidden rounded-[18px] border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2 shadow-sm shadow-black/20">
                 <p className="text-[13px] leading-[160%] text-[#EBEBEB]">
                   {input}
                 </p>
@@ -101,7 +97,7 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
                       {turn.question}
                     </p>
                   </div>
-                  <div className="max-w-[80%] self-end rounded-full border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2">
+                  <div className="max-w-[80%] self-end rounded-[18px] border border-[#262626]/30 bg-linear-to-br from-[#333333] to-[#1F1F1F] px-3.5 py-2">
                     <p className="text-[13px] leading-[160%] text-[#EBEBEB]">
                       {turn.answer}
                     </p>
@@ -112,7 +108,11 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
           )}
 
           {isStreaming && (
-            <ThinkingIndicator isStreaming={true} startedAt={startedAt} />
+            <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
+              <CardContent className="gap-3 p-4">
+                <ThinkingIndicator isStreaming={true} startedAt={startedAt} />
+              </CardContent>
+            </Card>
           )}
 
           {state.stage === "early-clarify" && (
@@ -138,6 +138,7 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
           {state.stage === "matched" && (
             <MatchResults
               codes={state.codes}
+              businessUnderstanding={state.businessUnderstanding}
               onBrowseTable={scrollToTable}
               onRegister={handleRdbHandoff}
               startedAt={startedAt}

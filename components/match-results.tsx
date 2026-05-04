@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ExternalLinkIcon } from "lucide-react"
 
+import { MessageResponse } from "@/components/ai-elements/message"
 import { ThinkingIndicator } from "@/components/thinking-indicator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +12,7 @@ import type { MatchedCode } from "@/lib/types"
 
 interface MatchResultsProps {
   codes: MatchedCode[]
+  businessUnderstanding: string
   onBrowseTable: () => void
   onRegister: () => void
   startedAt: number | null
@@ -18,6 +20,7 @@ interface MatchResultsProps {
 
 export function MatchResults({
   codes,
+  businessUnderstanding,
   onBrowseTable,
   onRegister,
   startedAt,
@@ -35,17 +38,25 @@ export function MatchResults({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
-
       <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
         <CardContent className="gap-3 p-4">
-          <p
-            className="text-[13px] leading-[160%] text-[#EBEBEB]"
+          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+
+          <div
+            className="rounded-[12px] border border-[#2A2A2A] bg-[#111111] px-3 py-2.5"
             role="status"
             aria-live="polite"
           >
-            Based on your description, here are your best matching activity
-            codes:
+            <p className="text-[11px] font-medium tracking-wide text-[#666666] uppercase">
+              How we understood your business
+            </p>
+            <MessageResponse className="mt-1.5 text-[13px] leading-[160%] text-[#CCCCCC]">
+              {businessUnderstanding}
+            </MessageResponse>
+          </div>
+
+          <p className="text-[13px] leading-[160%] text-[#EBEBEB]">
+            Based on that, here are the closest matching activity codes:
           </p>
 
           <div className="flex flex-col gap-0">
@@ -64,9 +75,9 @@ export function MatchResults({
                     {code.name}
                   </span>
                 </div>
-                <p className="text-xs leading-[150%] text-[#888888]">
+                <MessageResponse className="text-xs leading-[150%] text-[#888888]">
                   {code.reason}
-                </p>
+                </MessageResponse>
               </div>
             ))}
           </div>

@@ -113,6 +113,7 @@ export async function POST(req: Request) {
             input,
             result: {
               type: "match" as const,
+              businessUnderstanding: object.businessUnderstanding,
               codes: object.codes,
               clarifyHistory,
             },

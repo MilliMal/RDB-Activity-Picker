@@ -58,6 +58,7 @@ Return a JSON object in one of these two shapes:
 Shape 1 — when you can confidently match:
   {
     "type": "match",
+    "businessUnderstanding": "2–4 sentences in plain language: what kind of business this is, how it operates, primary vs secondary activities, and whether you infer one operation or multiple distinct lines. Must reflect your reasoning BEFORE picking codes — not a summary of the codes themselves.",
     "codes": [
       {
         "code": "12345",
@@ -66,9 +67,10 @@ Shape 1 — when you can confidently match:
       }
     ]
   }
-  Return one code per distinct activity. Do not pad —
-  only include a code if it clearly matches something the
-  user described.
+  The field businessUnderstanding is required for every match.
+  Return one code per distinct business activity or operation.
+  Do not pad — only include a code if it clearly matches that
+  understanding.
 
 Shape 2 — when you need more information:
   {

@@ -57,6 +57,7 @@ export function usePickerFlow() {
     const r = result as {
       type?: string
       codes?: MatchedCode[]
+      businessUnderstanding?: string
       question?: string
       options?: ClarifyOption[]
     } | null
@@ -66,9 +67,19 @@ export function usePickerFlow() {
       setState({ stage: "fallback", reason: "validation-error" })
       return
     }
-    if (r.type === "match" && r.codes && r.codes.length > 0) {
+    if (
+      r.type === "match" &&
+      r.codes &&
+      r.codes.length > 0 &&
+      typeof r.businessUnderstanding === "string" &&
+      r.businessUnderstanding.trim().length > 0
+    ) {
       matchedShownAtRef.current = Date.now()
-      setState({ stage: "matched", codes: r.codes })
+      setState({
+        stage: "matched",
+        codes: r.codes,
+        businessUnderstanding: r.businessUnderstanding.trim(),
+      })
       return
     }
     if (

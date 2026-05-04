@@ -33,10 +33,10 @@ export function ClarifyCard({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
-
       <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
         <CardContent className="gap-2 p-4">
+          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+
           {round > 1 && (
             <p className="text-[11px] text-[#555555]">
               Clarification {round} of {maxRounds}

@@ -1,10 +1,14 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import { ArrowUpIcon } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  type PromptInputMessage,
+} from "@/components/ai-elements/prompt-input"
 import { cn } from "@/lib/utils"
 
 interface ActivityInputProps {
@@ -24,7 +28,7 @@ export function ActivityInput({
 }: ActivityInputProps) {
   const [value, setValue] = useState(defaultValue)
   const [localHint, setLocalHint] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputId = useId()
   const hintId = useId()
 
@@ -34,8 +38,9 @@ export function ActivityInput({
     }
   }, [defaultValue])
 
-  function handleSubmit() {
-    const trimmed = value.trim()
+  function handleSubmit(message?: PromptInputMessage) {
+    const submittedValue = message ? message.text : value
+    const trimmed = submittedValue.trim()
     if (!trimmed || disabled) return
     const result = onSubmit(trimmed)
     setLocalHint(result?.hint ?? null)
@@ -49,35 +54,34 @@ export function ActivityInput({
         <label htmlFor={inputId} className="sr-only">
           Describe your business
         </label>
-        <div className="flex w-full items-center overflow-hidden rounded-full border border-white/15 bg-[#202020] px-3 py-3 shadow-sm">
-          <Input
-            ref={inputRef}
-            id={inputId}
-            name="business-description"
-            autoComplete="off"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            placeholder={placeholder}
-            disabled={disabled}
-            aria-invalid={displayHint ? true : undefined}
-            aria-describedby={displayHint ? hintId : undefined}
-            className="h-auto flex-1 border-0 bg-transparent p-0 text-sm text-[#EBEBEB] shadow-none outline-none placeholder:text-[#505050] focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-0"
-          />
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={disabled || !value.trim()}
-            size="icon-sm"
-            aria-label="Submit business description"
-            className={cn(
-              "ml-2 size-7 shrink-0 rounded-[14px] border border-transparent bg-[#0E0E0E] hover:bg-[#1A1A1A]",
-              disabled || !value.trim() ? "opacity-50" : "opacity-100"
-            )}
-          >
-            <ArrowUpIcon className="size-4 text-[#808080]" aria-hidden />
-          </Button>
-        </div>
+        <PromptInput
+          onSubmit={handleSubmit}
+          aria-invalid={displayHint ? true : undefined}
+          aria-describedby={displayHint ? hintId : undefined}
+          data-disabled={disabled ? true : undefined}
+          className="rounded-[18px]"
+        >
+          <PromptInputBody>
+            <PromptInputTextarea
+              ref={inputRef}
+              id={inputId}
+              autoComplete="off"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="min-h-6"
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputSubmit
+              disabled={disabled || !value.trim()}
+              className={cn(
+                disabled || !value.trim() ? "opacity-50" : "opacity-100"
+              )}
+            />
+          </PromptInputFooter>
+        </PromptInput>
         {displayHint && (
           <p id={hintId} className="text-center text-xs text-[#FF6B6B]">
             {displayHint}

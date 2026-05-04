@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { ChevronDownIcon } from "lucide-react"
+import { useEffect, useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning"
 
 interface ThinkingIndicatorProps {
   isStreaming: boolean
@@ -18,76 +19,45 @@ export function ThinkingIndicator({
   startedAt,
   reasoningText,
 }: ThinkingIndicatorProps) {
-  const [elapsed, setElapsed] = useState(0)
-  const [frozenSeconds, setFrozenSeconds] = useState<number | null>(null)
-  const [open, setOpen] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [seconds, setSeconds] = useState(() =>
+    startedAt ? Math.max(1, Math.floor((Date.now() - startedAt) / 1000)) : 0
+  )
 
   useEffect(() => {
-    let resetId: ReturnType<typeof setTimeout> | undefined
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    if (!startedAt) return
+
+    function update() {
+      setSeconds(Math.max(1, Math.floor((Date.now() - startedAt!) / 1000)))
     }
 
-    if (isStreaming && startedAt) {
-      resetId = setTimeout(() => {
-        setFrozenSeconds(null)
-        setElapsed(0)
-      }, 0)
-      const tick = () => {
-        setElapsed(Math.floor((Date.now() - startedAt) / 1000))
-      }
-      intervalRef.current = setInterval(tick, 500)
-    } else if (startedAt) {
-      resetId = setTimeout(() => {
-        setFrozenSeconds(Math.floor((Date.now() - startedAt) / 1000))
-      }, 0)
-    }
-
-    return () => {
-      if (resetId) clearTimeout(resetId)
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
+    if (isStreaming) {
+      const interval = setInterval(update, 500)
+      return () => clearInterval(interval)
     }
   }, [isStreaming, startedAt])
 
-  const seconds = frozenSeconds != null ? frozenSeconds : elapsed
-  const label = isStreaming
-    ? "Thinking…"
-    : `Thought for ${seconds} second${seconds !== 1 ? "s" : ""}`
-
   return (
-    <Card className="rounded-[20px] border-0 bg-[#151515] shadow-none">
-      <CardContent className="gap-2 p-4">
-        <div role="status" aria-live="polite" aria-atomic="true">
-          <Button
-            variant="ghost"
-            className="h-auto justify-start gap-2 p-0 text-left text-[13px] text-[#808080] hover:bg-transparent hover:text-[#AAAAAA]"
-            onClick={() => !isStreaming && setOpen((o) => !o)}
-          >
-            {label}
-            {!isStreaming && (
-              <ChevronDownIcon
-                className={cn(
-                  "size-4 shrink-0 text-[#808080] transition-transform",
-                  open && "rotate-180"
-                )}
-              />
-            )}
-          </Button>
-        </div>
-
-        {!isStreaming && open && reasoningText && (
-          <div className="max-h-50 overflow-hidden rounded-[10px] border border-[#262626]/20 bg-[#0E0E0E]/30 px-3 py-2">
-            <p className="text-[11px] leading-[160%] text-[#808080]/60">
-              {reasoningText}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <Reasoning
+      isStreaming={isStreaming}
+      duration={seconds}
+      defaultOpen={true}
+      className="w-full"
+    >
+      <ReasoningTrigger
+        getThinkingMessage={(streaming, duration) =>
+          streaming
+            ? "Thinking..."
+            : `Thought for ${duration ?? seconds} second${
+                (duration ?? seconds) === 1 ? "" : "s"
+              }`
+        }
+      />
+      <ReasoningContent>
+        {reasoningText ??
+          (isStreaming
+            ? "Reviewing the business description and comparing it with the official activity code table."
+            : "Matched the description against the official activity code table and selected the closest available registration codes.")}
+      </ReasoningContent>
+    </Reasoning>
   )
 }

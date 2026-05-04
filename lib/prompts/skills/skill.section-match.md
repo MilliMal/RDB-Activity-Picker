@@ -6,6 +6,17 @@ are most likely to contain the user's business activity. Return
 between 1 and 3 section letters. Return the minimum needed —
 do not return sections just to be safe.
 
+First form a **single mental summary** of what kind of business this
+is (how it operates and earns money). Do **not** choose sections by
+matching each product or keyword independently — anchor on the whole
+operation. Then identify the primary business category: what the
+business is mainly operated as, how customers experience it, and
+where its main revenue is likely to come from. Use that category as
+the anchor for section selection. Only add another section when the user
+clearly describes a **separate** line of business, not just a facility,
+customer type, location, product sold on the side, or supporting
+service inside the main business.
+
 ---
 
 ## Section guide
@@ -76,6 +87,10 @@ car dealership; motorcycle sales.
 
 Key distinction: if they MAKE what they sell → C or A.
 If they BUY and RESELL → G.
+Do not include G just because a hotel, restaurant, tour company,
+school, clinic, salon, or other service business sells a small item
+to its own customers. Include G only when trade is a clear separate
+business activity or the main activity.
 
 Sub-divisions in G:
 - Motor vehicle trade and repair
@@ -94,6 +109,9 @@ Rwanda signals: hotel, restaurant, bar, café, catering for
 events, food delivery service.
 Key distinction: manufacturing food to sell in shops is C.
 Cooking food for people to eat or delivering ready meals is I.
+If the user says they have a hotel, lodge, guesthouse, or resort,
+I is usually the anchor section even if they mention tourists,
+safaris, guides, meals, or small goods sold to hotel guests.
 
 ### J — Information and Communication (66 codes)
 Technology, media, publishing, telecoms, software.
@@ -127,6 +145,9 @@ Rwanda signals: security company, cleaning services,
 travel agency, car rental, temp staffing, document
 preparation, parking services.
 Key distinction: travel agency is N. Hotel is I.
+Tour operators, travel agencies, reservation services, and tourist
+guides are in N. If a hotel also provides guided tours or safari
+arrangements as a real service, include both I and N.
 
 ### O — Public Administration and Defence (36 codes)
 Government activities only.
@@ -173,10 +194,14 @@ Not relevant for private business registration.
    the user described. Do not omit sections to keep the list short.
 2. If the business has two distinct activities (e.g. manufacturing
    AND selling), return both relevant sections.
-3. When the input mentions selling an agricultural product (crops,
+3. Do not split a description into unrelated sections for activities
+   that are only ancillary to the primary category. Example: a hotel
+   that sells clothes or souvenirs to guests is still primarily I
+   unless the user clearly says retail is a separate shop/business.
+4. When the input mentions selling an agricultural product (crops,
    vegetables, fruit, livestock products, fish) and it is not
    clear whether the user grows/raises it or buys it to resell,
    return BOTH A and G. Do not guess — the next step will clarify.
-4. Never return O, T, or U for a private business.
-5. Section C has 1,062 codes. Only include it when the user is
+5. Never return O, T, or U for a private business.
+6. Section C has 1,062 codes. Only include it when the user is
    clearly making or transforming something physical.

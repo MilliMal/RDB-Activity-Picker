@@ -23,10 +23,10 @@ export function EarlyClarifyCard({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
-
       <Card className="w-full rounded-[20px] border-0 bg-[#151515] shadow-none">
         <CardContent className="gap-3 p-4">
+          <ThinkingIndicator isStreaming={false} startedAt={startedAt} />
+
           <p
             className="text-[13px] leading-[160%] text-[#EBEBEB]"
             role="status"
