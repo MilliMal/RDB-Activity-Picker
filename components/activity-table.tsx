@@ -78,13 +78,14 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   ).filter((el) => !el.closest("[aria-hidden='true']"))
 }
 
-/** Flex proportions — division gets the most space since it consistently has the longest text. */
-const colClass = (id: string) =>
+/**
+ * Desktop table layout uses a grid so columns can size to content without
+ * hard locking widths. `min-w-0` ensures truncation can happen inside 1fr cells.
+ */
+const columnClassName = (id: string) =>
   cn(
-    id === "code" && "w-[4.5rem] shrink-0 font-mono",
-    id === "section" && "flex-[2] min-w-0",
-    id === "division" && "flex-[3] min-w-0",
-    id === "activity" && "flex-[2] min-w-0"
+    id === "code" && "font-mono text-[#666666]",
+    (id === "section" || id === "division" || id === "activity") && "min-w-0"
   )
 
 export function ActivityTable({
@@ -543,15 +544,9 @@ export function ActivityTable({
         </CardHeader>
 
         <CardContent className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] touch-pan-x">
-            <div
-              className={cn(
-                "flex min-h-0 w-full flex-1 flex-col",
-                TABLE_SCROLL_MIN_WIDTH
-              )}
-            >
+          <div className="flex min-h-0 w-full flex-1 flex-col">
               {/* Column header stays outside the vertical scroll region so row offsets match @tanstack/virtual */}
-              <div className="flex shrink-0 items-center border-b border-[#222222] bg-[#181818] px-7 py-2.5">
+              <div className="hidden shrink-0 grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,2fr)] items-center border-b border-[#222222] bg-[#181818] px-7 py-2.5 md:grid">
                 {headerGroup.headers.map((header) => {
                   const sorted = header.column.getIsSorted()
                   return (
@@ -720,7 +715,6 @@ export function ActivityTable({
                 </div>
               </div>
             </div>
-          </div>
         </CardContent>
       </Card>
           </motion.div>
@@ -746,50 +740,102 @@ function ActivityRow({
     <div
       id={`activity-code-${row.original.code}`}
       className={cn(
-        "flex w-full items-center border-b py-2.75 pr-7 pl-13",
+        "w-full border-b py-2.75 pr-7 pl-13",
         isHighlighted
           ? "border-[#033816] bg-[#12331D]"
           : "border-[#1C1C1C] bg-[#111111]"
       )}
     >
-      <span
-        className={cn(
-          columnClassName("code"),
-          "text-[13px] leading-4",
-          isHighlighted ? "font-semibold text-[#45C15B]" : "text-[#666666]"
-        )}
-      >
-        {row.original.code}
-      </span>
-      <span
-        className={cn(
-          columnClassName("section"),
-          "min-w-0 truncate text-[13px] leading-4",
-          isHighlighted ? "text-[#ACEAB1]" : "text-[#A3A3A3]"
-        )}
-        title={sectionTitle}
-      >
-        {sectionTitle}
-      </span>
-      <span
-        className={cn(
-          columnClassName("division"),
-          "min-w-0 truncate text-[13px] leading-4",
-          isHighlighted ? "text-[#ACEAB1]" : "text-[#888888]"
-        )}
-        title={row.original.division}
-      >
-        {row.original.division}
-      </span>
-      <span
-        className={cn(
-          columnClassName("activity"),
-          "min-w-0 text-[13px] leading-4 break-words",
-          isHighlighted ? "text-[#ACEAB1]" : "text-[#EBEBEB]"
-        )}
-      >
-        {row.original.activity}
-      </span>
+      {/* Mobile: vertical "card" row */}
+      <div className="flex flex-col gap-2 md:hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex shrink-0 rounded-[10px] border px-2 py-1 text-[12px] leading-4 font-semibold",
+                  "border-[#1E1E1E] bg-[#141414] font-mono",
+                  isHighlighted ? "text-[#45C15B]" : "text-[#A3A3A3]"
+                )}
+              >
+                {row.original.code}
+              </span>
+              <span
+                className={cn(
+                  "truncate text-[12px] leading-4",
+                  isHighlighted ? "text-[#ACEAB1]" : "text-[#888888]"
+                )}
+                title={sectionTitle}
+              >
+                {sectionTitle}
+              </span>
+            </div>
+            <div
+              className={cn(
+                "text-[13px] leading-5",
+                isHighlighted ? "text-[#ACEAB1]" : "text-[#EBEBEB]"
+              )}
+            >
+              {row.original.activity}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-2 text-[12px] leading-4 text-[#666666]">
+          <span className="shrink-0 text-[#555555]">Division</span>
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              isHighlighted ? "text-[#ACEAB1]" : "text-[#A3A3A3]"
+            )}
+            title={row.original.division}
+          >
+            {row.original.division}
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop: table/grid row */}
+      <div className="hidden grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,2fr)] items-center gap-4 md:grid">
+        <span
+          className={cn(
+            columnClassName("code"),
+            "text-[13px] leading-4",
+            isHighlighted ? "font-semibold text-[#45C15B]" : "text-[#666666]"
+          )}
+        >
+          {row.original.code}
+        </span>
+        <span
+          className={cn(
+            columnClassName("section"),
+            "truncate text-[13px] leading-4",
+            isHighlighted ? "text-[#ACEAB1]" : "text-[#A3A3A3]"
+          )}
+          title={sectionTitle}
+        >
+          {sectionTitle}
+        </span>
+        <span
+          className={cn(
+            columnClassName("division"),
+            "truncate text-[13px] leading-4",
+            isHighlighted ? "text-[#ACEAB1]" : "text-[#888888]"
+          )}
+          title={row.original.division}
+        >
+          {row.original.division}
+        </span>
+        <span
+          className={cn(
+            columnClassName("activity"),
+            "text-[13px] leading-4 break-words",
+            isHighlighted ? "text-[#ACEAB1]" : "text-[#EBEBEB]"
+          )}
+        >
+          {row.original.activity}
+        </span>
+      </div>
     </div>
   )
 }
