@@ -141,7 +141,7 @@ export function PickerClient({ allCodes, allSections }: PickerClientProps) {
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-svh flex-col items-center bg-black">
+    <div className="flex h-dvh flex-col items-center bg-black">
       <div className="flex w-full max-w-138 flex-1 min-h-0 flex-col">
         <div
           className={`min-h-0 flex-1 overflow-y-auto px-4 pt-8 sm:pt-15 ${showBottomPanel ? "pb-4" : "pb-8 sm:pb-15"}`}

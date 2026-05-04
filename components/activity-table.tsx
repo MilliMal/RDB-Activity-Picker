@@ -32,7 +32,9 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { easeOutStrong, transitionUi } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import type { ActivityCode, Section } from "@/lib/types"
@@ -102,7 +104,6 @@ export function ActivityTable({
     () => new Set(sections.map((s) => s.id))
   )
   const [filterSectionIds, setFilterSectionIds] = useState<string[]>([])
-  const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
 
   const titleId = useId()
@@ -255,7 +256,8 @@ export function ActivityTable({
         .rows.filter((r) => r.original.section === section.id),
       totalInSection: data.filter((c) => c.section === section.id).length,
     }))
-  }, [sections, table, data])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections, table, data, filteredData, sorting])
 
   const virtualItems = useMemo((): VirtualListItem[] => {
     const items: VirtualListItem[] = []
@@ -309,6 +311,37 @@ export function ActivityTable({
       return "hint"
     },
   })
+
+  const [stickySection, setStickySection] = useState<Section | null>(null)
+
+  useEffect(() => {
+    const el = scrollParentRef.current
+    if (!el || !open) return
+
+    const sectionHeaderIndices = virtualItems
+      .map((item, i) => ({ item, i }))
+      .filter((x): x is { item: VirtualListItem & { type: "section-header" }; i: number } =>
+        x.item.type === "section-header"
+      )
+
+    function update() {
+      const scrollTop = el!.scrollTop
+      let current: Section | null = null
+      for (const { item, i } of sectionHeaderIndices) {
+        const m = rowVirtualizer.measurementsCache[i]
+        const headerStart = m ? m.start : i * HEADER_ESTIMATE_PX
+        if (headerStart < scrollTop) current = item.section
+      }
+      setStickySection(current)
+    }
+
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    return () => {
+      el.removeEventListener("scroll", update)
+      setStickySection(null)
+    }
+  }, [open, virtualItems, rowVirtualizer])
 
   useEffect(() => {
     if (highlightedCodes.length === 0) return
@@ -369,6 +402,7 @@ export function ActivityTable({
       : { opacity: 0, y: "1.5%", scale: 0.98 }
 
   return (
+    <>
     <AnimatePresence
       onExitComplete={() => {
         setExitViaKeyboard(false)
@@ -382,6 +416,7 @@ export function ActivityTable({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: backdropExitTransition }}
           transition={backdropEnterTransition}
+          onClick={onClose}
         >
           <motion.div
             ref={dialogRef}
@@ -399,6 +434,7 @@ export function ActivityTable({
             }}
             transition={panelEnterTransition}
             style={{ willChange: "transform, opacity" }}
+            onClick={(e) => e.stopPropagation()}
           >
         <Card className="flex max-h-[90vh] min-h-0 w-full flex-col overflow-hidden rounded-[20px] border-[#252525] bg-[#111111] text-[#EBEBEB] shadow-2xl">
         <CardHeader className="min-w-0 gap-3 border-b border-[#1E1E1E] bg-[#101010] px-4 py-4">
@@ -432,74 +468,77 @@ export function ActivityTable({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex min-w-0 max-w-full flex-1 basis-[12rem] items-center gap-2 rounded-[10px] border border-[#2A2A2A] bg-[#1C1C1C] px-3.5 py-2 sm:w-50 sm:flex-none">
-              <SearchIcon className="size-3.5 shrink-0 text-[#555555]" />
+            <div className="relative flex-1 basis-[12rem] sm:w-50 sm:flex-none">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#555555]" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search activities..."
-                className="h-auto border-0 bg-transparent p-0 text-[13px] text-[#EBEBEB] shadow-none placeholder:text-[#444444] focus-visible:ring-0"
+                className="h-9 border-[#2A2A2A] bg-[#1C1C1C] pl-8.5 text-[13px] text-[#EBEBEB] placeholder:text-[#444444] focus-visible:border-[#3A3A3A] focus-visible:ring-1 focus-visible:ring-[#3A3A3A]"
               />
             </div>
 
-            <div className="relative">
-              <Button
+            <Popover>
+              <PopoverTrigger
                 type="button"
-                variant="outline"
-                onClick={() => setShowFilterPanel((p) => !p)}
-                className="rounded-[10px] border-[#2A2A2A] bg-[#1C1C1C] px-3.5 py-2 text-[13px] text-[#EBEBEB] hover:bg-[#252525] hover:text-[#EBEBEB]"
+                className="inline-flex shrink-0 select-none items-center gap-1.5 rounded-[10px] border border-[#2A2A2A] bg-[#1C1C1C] px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-[#EBEBEB] outline-none transition-colors duration-150 ease-out hover:bg-[#252525] hover:text-[#EBEBEB] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97]"
               >
                 <SlidersHorizontalIcon className="size-3.5 shrink-0" />
                 Filter
                 {filterSectionIds.length > 0
-                  ? ` · ${filterSectionIds.length} sector${filterSectionIds.length > 1 ? "s" : ""}`
+                  ? ` · ${filterSectionIds.length}`
                   : ""}
-              </Button>
-
-              {showFilterPanel && (
-                <Card className="absolute top-full right-0 z-10 mt-1 max-h-75 w-65 overflow-y-auto rounded-[12px] border-[#2A2A2A] bg-[#1C1C1C] p-2 shadow-xl">
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-64 gap-0 rounded-[12px] border-[#2A2A2A] bg-[#1C1C1C] p-1.5 shadow-xl"
+              >
+                <div className="max-h-72 overflow-y-auto">
                   {sections.map((s) => {
-                    const selected = filterSectionIds.includes(s.id)
+                    const checked = filterSectionIds.includes(s.id)
                     return (
-                      <Button
+                      <label
                         key={s.id}
-                        type="button"
-                        variant="ghost"
                         className={cn(
-                          "h-auto w-full justify-start rounded-[8px] px-2 py-1.5 text-left text-xs text-[#EBEBEB] hover:bg-[#252525] hover:text-[#EBEBEB]",
-                          selected && "bg-[#252525] text-[#45C15B]"
+                          "flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 transition-colors duration-100",
+                          checked
+                            ? "bg-[#1E2E1F] text-[#45C15B]"
+                            : "text-[#EBEBEB] hover:bg-[#252525]"
                         )}
-                        onClick={() => {
-                          setFilterSectionIds((prev) =>
-                            selected
-                              ? prev.filter((id) => id !== s.id)
-                              : [...prev, s.id]
-                          )
-                        }}
                       >
-                        <span
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            setFilterSectionIds((prev) =>
+                              value
+                                ? [...prev, s.id]
+                                : prev.filter((id) => id !== s.id)
+                            )
+                          }
                           className={cn(
-                            "size-2 rounded-full border border-[#555555]",
-                            selected && "border-[#45C15B] bg-[#45C15B]"
+                            "border-[#555555]",
+                            checked && "border-[#45C15B] bg-[#45C15B]"
                           )}
                         />
-                        {s.title}
-                      </Button>
+                        <span className="text-xs leading-[1.4]">{s.title}</span>
+                      </label>
                     )
                   })}
-                  {filterSectionIds.length > 0 && (
+                </div>
+                {filterSectionIds.length > 0 && (
+                  <div className="mt-1 border-t border-[#2A2A2A] pt-1">
                     <Button
                       type="button"
                       variant="ghost"
-                      className="mt-1 h-auto w-full justify-start rounded-[8px] px-2 py-1.5 text-left text-xs text-[#888888] hover:bg-[#252525] hover:text-[#EBEBEB]"
+                      className="h-auto w-full justify-start rounded-[8px] px-2.5 py-1.5 text-left text-xs text-[#888888] hover:bg-[#252525] hover:text-[#EBEBEB]"
                       onClick={() => setFilterSectionIds([])}
                     >
                       Clear filters
                     </Button>
-                  )}
-                </Card>
-              )}
-            </div>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
         </CardHeader>
 
@@ -541,6 +580,40 @@ export function ActivityTable({
                   )
                 })}
               </div>
+
+              {/* Sticky section header — identical to the virtual section headers so it looks like the row is pinned */}
+              {stickySection && (() => {
+                const group = sectionGroups.find(g => g.section.id === stickySection.id)
+                const isExpanded = expandedSections.has(stickySection.id)
+                const rowCount = group ? (group.rows.length > 0 ? group.rows.length : group.totalInSection) : 0
+                return (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto w-full shrink-0 justify-start gap-2.5 rounded-none border-b border-[#1E1E1E] bg-[#1A1A1A] px-7 py-2.5 text-left hover:bg-[#202020]"
+                    onClick={() => {
+                      setExpandedSections((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(stickySection.id)) next.delete(stickySection.id)
+                        else next.add(stickySection.id)
+                        return next
+                      })
+                    }}
+                  >
+                    {isExpanded ? (
+                      <ChevronDownIcon className="size-3.5 shrink-0 text-[#EBEBEB]" />
+                    ) : (
+                      <ChevronRightIcon className="size-3.5 shrink-0 text-[#444444]" />
+                    )}
+                    <span className={cn("flex-1 text-xs leading-4 font-semibold", isExpanded ? "text-[#EBEBEB]" : "text-[#555555]")}>
+                      {stickySection.title}
+                    </span>
+                    <span className={cn("text-[11px]", isExpanded ? "text-[#444444]" : "text-[#333333]")}>
+                      {rowCount} activities
+                    </span>
+                  </Button>
+                )
+              })()}
 
               <div
                 ref={scrollParentRef}
@@ -654,6 +727,7 @@ export function ActivityTable({
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   )
 }
 
